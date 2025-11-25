@@ -26,7 +26,7 @@ import type { PolkadotSigner } from 'polkadot-api';
 import { useEffect, useState } from 'react';
 
 import { useWallet } from '../../hooks';
-import AssetClaimStateProvider from '../../providers/AssetClainState/AssetClaimStateProvider';
+import AssetClaimStateProvider from '../../providers/AssetClaimState/AssetClaimStateProvider';
 import { getTxFromApi } from '../../utils';
 import { submitTransaction, submitTransactionPapi } from '../../utils';
 import {

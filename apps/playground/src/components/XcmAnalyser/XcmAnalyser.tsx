@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 
 import type { FormValues } from '../../components/XcmAnalyser/XcmAnalyserForm';
 import AnalyserForm from '../../components/XcmAnalyser/XcmAnalyserForm';
-import XcmAnalyserStateProvider from '../../providers/XcmAnalyserState/XcmAnalyserStateProvicer';
+import XcmAnalyserStateProvider from '../../providers/XcmAnalyserState/XcmAnalyserStateProvider';
 import { fetchFromApi } from '../../utils';
 import { showErrorNotification } from '../../utils/notifications';
 import { ErrorAlert } from '../common/ErrorAlert';

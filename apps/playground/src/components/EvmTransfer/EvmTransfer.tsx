@@ -24,7 +24,7 @@ import { darwinia, mainnet, moonbeam, moonriver } from 'viem/chains';
 import { Web3 } from 'web3';
 
 import { useWallet } from '../../hooks';
-import EvmTrasferStateProvider from '../../providers/EvmTransferState/EvmTrasferStateProvider';
+import EvmTrasferStateProvider from '../../providers/EvmTransferState/EvmTransferStateProvider';
 import type { EIP6963ProviderDetail, TEvmSubmitType } from '../../types';
 import {
   showErrorNotification,
