@@ -1,10 +1,11 @@
-import { TChain, TSubstrateChain } from '@paraspell/sdk';
-import { TAssetsQuery } from '../../types';
+import type { TChain, TSubstrateChain } from '@paraspell/sdk';
 import { createContext } from 'react';
-import {
+
+import type {
   TCurrencyType,
   TCustomCurrencySymbolSpecifier,
 } from '../../components/AssetsQueries/AssetsQueriesForm';
+import type { TAssetsQuery } from '../../types';
 
 type AssetQueryState = {
   func: TAssetsQuery;

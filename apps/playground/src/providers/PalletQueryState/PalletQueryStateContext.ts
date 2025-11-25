@@ -1,6 +1,7 @@
-import { TSubstrateChain } from '@paraspell/sdk';
-import { TPalletsQuery } from '../../types';
+import type { TSubstrateChain } from '@paraspell/sdk';
 import { createContext } from 'react';
+
+import type { TPalletsQuery } from '../../types';
 
 type PalletQueryState = {
   func: TPalletsQuery;

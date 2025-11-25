@@ -1,5 +1,6 @@
 import { createContext } from 'react';
-import { TApiType } from '../../types';
+
+import type { TApiType } from '../../types';
 
 type SelectedApiType = {
   selectedApiType?: TApiType;

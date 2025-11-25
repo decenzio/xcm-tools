@@ -1,5 +1,5 @@
-import { TChain, TSubstrateChain } from '@paraspell/sdk';
-import { TExchangeChain } from '@paraspell/xcm-router';
+import type { TChain, TSubstrateChain } from '@paraspell/sdk';
+import type { TExchangeChain } from '@paraspell/xcm-router';
 import { createContext } from 'react';
 
 type XcmRouterState = {

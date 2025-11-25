@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+
 import { PalletQueryStateContext } from '../../providers/PalletQueryState/PalletQueryStateContext';
 
 export const usePalletQueryState = () => {

@@ -1,16 +1,18 @@
 import type { TChain, TEvmChainFrom, TSubstrateChain } from '@paraspell/sdk';
 import { CHAINS, SUBSTRATE_CHAINS } from '@paraspell/sdk';
-import { TApiType, TAssetsQuery, TPalletsQuery } from '../../types';
-import { TCurrencyEntry } from '../../components/XcmUtils/XcmUtilsForm';
-import { isValidWalletAddress } from '../validationUtils';
-import { DEFAULT_ADDRESS } from '../../constants';
-import { ASSET_QUERIES, PALLETS_QUERIES } from '../../consts';
-import {
+import type { TExchangeChain } from '@paraspell/xcm-router';
+import { EXCHANGE_CHAINS } from '@paraspell/xcm-router';
+
+import { ASSET_CLAIM_SUPPORTED_CHAINS } from '../../components/AssetClaim/AssetClaimForm';
+import type {
   TCurrencyType,
   TCustomCurrencySymbolSpecifier,
 } from '../../components/AssetsQueries/AssetsQueriesForm';
-import { ASSET_CLAIM_SUPPORTED_CHAINS } from '../../components/AssetClaim/AssetClaimForm';
-import { EXCHANGE_CHAINS, TExchangeChain } from '@paraspell/xcm-router';
+import type { TCurrencyEntry } from '../../components/XcmUtils/XcmUtilsForm';
+import { DEFAULT_ADDRESS } from '../../constants';
+import { ASSET_QUERIES, PALLETS_QUERIES } from '../../consts';
+import type { TApiType, TAssetsQuery, TPalletsQuery } from '../../types';
+import { isValidWalletAddress } from '../validationUtils';
 
 function isValidSubstrateChain(value: string | null): value is TSubstrateChain {
   return value !== null && SUBSTRATE_CHAINS.includes(value as TSubstrateChain);
@@ -122,19 +124,19 @@ export function decodeApiType(s: string | null): TApiType | undefined {
 }
 
 export function decodeSubstrateChain(s: string | null): TSubstrateChain {
-  return isValidSubstrateChain(s) ? (s as TSubstrateChain) : 'Astar';
+  return isValidSubstrateChain(s) ? s : 'Astar';
 }
 
 export function decodeChain(s: string | null): TChain {
-  return isValidChain(s) ? (s as TChain) : 'Hydration';
+  return isValidChain(s) ? s : 'Hydration';
 }
 
 export function decodeEvmChain(s: string | null): TEvmChainFrom {
-  return isValidEvmChain(s) ? (s as TEvmChainFrom) : 'Ethereum';
+  return isValidEvmChain(s) ? s : 'Ethereum';
 }
 
 export function decodeAssetClaimChain(s: string | null): TSubstrateChain {
-  return isValidAssetClaimChain(s) ? (s as TSubstrateChain) : 'Polkadot';
+  return isValidAssetClaimChain(s) ? s : 'Polkadot';
 }
 
 export function encodeBoolean(value: boolean): string {
@@ -158,7 +160,7 @@ export function encodeStringOrUndefined<
 }
 
 export function decodeAssetQuery(s: string | null): TAssetsQuery {
-  return isValidAssetQuery(s) ? (s as TAssetsQuery) : 'ASSETS_OBJECT';
+  return isValidAssetQuery(s) ? s : 'ASSETS_OBJECT';
 }
 
 export function decodeCurrencyType(s: string | null): TCurrencyType {
@@ -177,7 +179,7 @@ export function decodeCurrencySymbolSpecifier(
 }
 
 export function decodePalletsQuery(s: string | null): TPalletsQuery {
-  return isValidPalletsQuery(s) ? (s as TPalletsQuery) : 'ALL_PALLETS';
+  return isValidPalletsQuery(s) ? s : 'ALL_PALLETS';
 }
 
 export function encodeExchanges(e: TExchangeChain[] | undefined): string {
@@ -196,7 +198,7 @@ export function decodeExchanges(
   return s
     .split(',')
     .filter(Boolean)
-    .filter((exchange) => isValidExchangeChain(exchange)) as TExchangeChain[];
+    .filter((exchange) => isValidExchangeChain(exchange));
 }
 
 export function decodePercentage(s: string | null): string {

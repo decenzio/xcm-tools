@@ -1,4 +1,4 @@
-import { TSubstrateChain } from '@paraspell/sdk';
+import type { TSubstrateChain } from '@paraspell/sdk';
 import { createContext } from 'react';
 
 type AssetClaimState = {

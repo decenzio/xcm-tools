@@ -1,6 +1,7 @@
-import { TChain, TSubstrateChain } from '@paraspell/sdk';
-import { TCurrencyEntry } from '../../components/XcmTransfer/XcmTransferForm';
+import type { TChain, TSubstrateChain } from '@paraspell/sdk';
 import { createContext } from 'react';
+
+import type { TCurrencyEntry } from '../../components/XcmTransfer/XcmTransferForm';
 
 type XcmTransferState = {
   from: TSubstrateChain;

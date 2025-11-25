@@ -1,5 +1,8 @@
+import type { UseFormReturnType } from '@mantine/form';
+import { isRelayChain } from '@paraspell/sdk';
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+
 import {
   encodeApiType,
   encodeBoolean,
@@ -11,8 +14,6 @@ import {
   encodeStringOrUndefined,
   setOrDelete,
 } from '../utils/routes/urlFilters';
-import { UseFormReturnType } from '@mantine/form';
-import { isRelayChain } from '@paraspell/sdk';
 import {
   useAssetClaimState,
   useAssetQueryState,
@@ -100,12 +101,6 @@ class FilterSyncBuilder<TState = any> {
     });
     return this;
   }
-
-  addCustomFilter(config: FilterConfig<TState>): this {
-    this.filters.push(config);
-    return this;
-  }
-
   build(): FilterConfig<TState>[] {
     return this.filters;
   }

@@ -1,4 +1,4 @@
-import { TChain, TEvmChainFrom } from '@paraspell/sdk';
+import type { TChain, TEvmChainFrom } from '@paraspell/sdk';
 import { createContext } from 'react';
 
 type EvmTrasferState = {
