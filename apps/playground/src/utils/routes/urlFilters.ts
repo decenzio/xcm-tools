@@ -97,7 +97,7 @@ export function decodeFeeAsset(
   }
 
   const json = atob(decodeURIComponent(s));
-  return JSON.parse(json);
+  return JSON.parse(json) as Omit<TCurrencyEntry, 'amount' | 'isMax'>;
 }
 
 export function decodeRecipientAddress(s: string | null): string {

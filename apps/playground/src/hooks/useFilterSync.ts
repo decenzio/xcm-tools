@@ -3,6 +3,13 @@ import { isRelayChain } from '@paraspell/sdk';
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import type { FormValues as AssetClaimFormValues } from '../components/AssetClaim/AssetClaimForm';
+import type { FormValues as AssetQueryFormValues } from '../components/AssetsQueries/AssetsQueriesForm';
+import type { FormValues as EvmTransferFormValues } from '../components/EvmTransfer/EvmTransferForm';
+import type { FormValues as PalletQueryFormValues } from '../components/PalletsQueries/PalletsQueriesForm';
+import type { FormValues as XcmAnalyserFormValues } from '../components/XcmAnalyser/XcmAnalyserForm';
+import type { TRouterFormValues } from '../components/XcmRouter/XcmRouterForm';
+import type { FormValues as XcmTransferFormValues } from '../components/XcmTransfer/XcmTransferForm';
 import {
   encodeApiType,
   encodeBoolean,
@@ -25,18 +32,18 @@ import {
   useXcmTransferState,
 } from '.';
 
-type EncoderFunction<T = any> = (value: T) => string | undefined;
+type EncoderFunction<T = unknown> = (value: T) => string | undefined;
 
-interface FilterConfig<TState = any> {
+interface FilterConfig<TState = unknown> {
   paramName: string;
-  getValue: (state: TState, formValues?: any) => any;
+  getValue: (state: TState, formValues?: Record<string, unknown>) => unknown;
   encoder: EncoderFunction;
-  shouldInclude?: (state: TState, formValues?: any) => boolean;
+  shouldInclude?: (state: TState, formValues?: Record<string, unknown>) => boolean;
 }
 
 interface UseFilterSyncOptions<
-  TState = any,
-  TFormValues extends Record<string, any> = any,
+  TState = unknown,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 > {
   state: TState;
   form?: UseFormReturnType<TFormValues>;
@@ -44,8 +51,8 @@ interface UseFilterSyncOptions<
 }
 
 function useFilterSync<
-  TState = any,
-  TFormValues extends Record<string, any> = any,
+  TState = unknown,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 >({ state, filters, form }: UseFilterSyncOptions<TState, TFormValues>) {
   const [searchParams, setSearchParams] = useSearchParams();
   const formValues = form?.getValues();
@@ -80,7 +87,7 @@ function useFilterSync<
   }, [encoded, searchParams, setSearchParams, filters]);
 }
 
-class FilterSyncBuilder<TState = any> {
+class FilterSyncBuilder<TState = unknown> {
   private filters: FilterConfig<TState>[] = [];
 
   addFilter<K extends keyof TState>(
@@ -88,13 +95,13 @@ class FilterSyncBuilder<TState = any> {
     stateKey: K,
     encoder: EncoderFunction<TState[K]>,
     formKey?: string,
-    shouldInclude?: (state: TState, formValues?: any) => boolean,
+    shouldInclude?: (state: TState, formValues?: Record<string, unknown>) => boolean,
   ): this {
     this.filters.push({
       paramName,
       getValue: (state, formValues) => {
-        const fKey = formKey ?? stateKey;
-        return formValues?.[fKey] ?? state[stateKey];
+        const fKey = (formKey ?? stateKey) as string;
+        return (formValues?.[fKey] ?? state[stateKey]) as TState[K];
       },
       encoder,
       shouldInclude,
@@ -123,7 +130,7 @@ export function useSelectedApiTypeFilterSync() {
   });
 }
 
-export function useXcmTransferFilterSync(form?: UseFormReturnType<any>) {
+export function useXcmTransferFilterSync(form?: UseFormReturnType<XcmTransferFormValues>) {
   const xcmState = useXcmTransferState();
 
   const filters = useMemo(
@@ -148,7 +155,7 @@ export function useXcmTransferFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function useEvmTransferFilterSync(form?: UseFormReturnType<any>) {
+export function useEvmTransferFilterSync(form?: UseFormReturnType<EvmTransferFormValues>) {
   const evmState = useEvmTransferState();
 
   const filters = useMemo(
@@ -172,7 +179,7 @@ export function useEvmTransferFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
+export function useAssetQueryFilterSync(form?: UseFormReturnType<AssetQueryFormValues>) {
   const assetQueryState = useAssetQueryState();
 
   const filters = useMemo(
@@ -188,7 +195,7 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
             //We do not want to display this field in the url if the field component is not rendered,
             // this is the duplicated logic from the Form component,
             // if this logic changes often, it probably would be better to abstract it
-            const func = formValues?.func ?? state.func;
+            const func = (formValues as AssetQueryFormValues | undefined)?.func ?? state.func;
             const shouldHideChain =
               func === 'ETHEREUM_BRIDGE_STATUS' || func === 'PARA_ETH_FEES';
             return !shouldHideChain;
@@ -200,7 +207,7 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeString,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
+            const func = (formValues as AssetQueryFormValues | undefined)?.func ?? state.func;
             return func === 'SUPPORTED_ASSETS' || func === 'ASSET_INFO';
           },
         )
@@ -210,8 +217,9 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeString,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
-            const currencyType = formValues?.currencyType ?? state.currencyType;
+            const typedFormValues = formValues as AssetQueryFormValues | undefined;
+            const func = typedFormValues?.func ?? state.func;
+            const currencyType = typedFormValues?.currencyType ?? state.currencyType;
 
             const showSymbolInput =
               func === 'ASSET_ID' ||
@@ -238,7 +246,7 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeString,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
+            const func = (formValues as AssetQueryFormValues | undefined)?.func ?? state.func;
             return func === 'ASSET_BALANCE' || func === 'CONVERT_SS58';
           },
         )
@@ -249,8 +257,9 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeStringOrUndefined,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
-            const chain = formValues?.chain ?? state.chain;
+            const typedFormValues = formValues as AssetQueryFormValues | undefined;
+            const func = typedFormValues?.func ?? state.func;
+            const chain = typedFormValues?.chain ?? state.chain;
 
             const supportsCurrencyType =
               func === 'ASSET_LOCATION' ||
@@ -271,9 +280,10 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeStringOrUndefined,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
-            const chain = formValues?.chain ?? state.chain;
-            const currencyType = formValues?.currencyType ?? state.currencyType;
+            const typedFormValues = formValues as AssetQueryFormValues | undefined;
+            const func = typedFormValues?.func ?? state.func;
+            const chain = typedFormValues?.chain ?? state.chain;
+            const currencyType = typedFormValues?.currencyType ?? state.currencyType;
 
             const supportsCurrencyType =
               func === 'ASSET_LOCATION' ||
@@ -299,7 +309,7 @@ export function useAssetQueryFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function usePalletQueryFilterSync(form?: UseFormReturnType<any>) {
+export function usePalletQueryFilterSync(form?: UseFormReturnType<PalletQueryFormValues>) {
   const palletQueryState = usePalletQueryState();
 
   const filters = useMemo(
@@ -313,7 +323,7 @@ export function usePalletQueryFilterSync(form?: UseFormReturnType<any>) {
           encodeString,
           undefined,
           (state, formValues) => {
-            const func = formValues?.func ?? state.func;
+            const func = (formValues as PalletQueryFormValues | undefined)?.func ?? state.func;
             return func === 'PALLET_INDEX';
           },
         )
@@ -329,7 +339,7 @@ export function usePalletQueryFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function useAssetClaimFilterSync(form?: UseFormReturnType<any>) {
+export function useAssetClaimFilterSync(form?: UseFormReturnType<AssetClaimFormValues>) {
   const assetClaimState = useAssetClaimState();
 
   const filters = useMemo(
@@ -350,7 +360,7 @@ export function useAssetClaimFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function useXcmRouterFilterSync(form?: UseFormReturnType<any>) {
+export function useXcmRouterFilterSync(form?: UseFormReturnType<TRouterFormValues>) {
   const xcmRouterState = useXcmRouterState();
 
   const filters = useMemo(
@@ -376,7 +386,7 @@ export function useXcmRouterFilterSync(form?: UseFormReturnType<any>) {
   });
 }
 
-export function useXcmAnalyserFilterSync(form?: UseFormReturnType<any>) {
+export function useXcmAnalyserFilterSync(form?: UseFormReturnType<XcmAnalyserFormValues>) {
   const xcmAnalyserState = useXcmAnalyserState();
 
   const filters = useMemo(
