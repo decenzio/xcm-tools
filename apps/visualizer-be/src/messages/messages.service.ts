@@ -300,9 +300,6 @@ export class MessageService {
       const ecosystems = parachains.map((p) =>
         getRelayChainOf(p).toLowerCase(),
       );
-      const ecoByParaId = new Map<number, string>();
-      for (let i = 0; i < paraIds.length; i++)
-        ecoByParaId.set(paraIds[i], ecosystems[i]);
 
       const query = `
       WITH selected_paras AS (
@@ -311,6 +308,7 @@ export class MessageService {
       ),
       asset_rows AS (
         SELECT
+          m.ecosystem,
           m.origin_para_id,
           (a.elem->>'symbol')                   AS symbol,
           NULLIF(a.elem->>'decimals','')::int   AS decimals,
@@ -324,6 +322,7 @@ export class MessageService {
           m.origin_block_timestamp BETWEEN $3 AND $4
       )
       SELECT
+        ecosystem,
         origin_para_id,
         symbol,
         MAX(decimals)                                           AS decimals,
@@ -334,7 +333,7 @@ export class MessageService {
         symbol IS NOT NULL AND symbol <> ''
         AND decimals IS NOT NULL
         AND amount_num IS NOT NULL
-      GROUP BY origin_para_id, symbol
+      GROUP BY ecosystem, origin_para_id, symbol
       ORDER BY count DESC, origin_para_id;
     `;
 
@@ -344,7 +343,7 @@ export class MessageService {
 
       return results.map((r) => {
         const paraId = r.origin_para_id;
-        const ecosystem = ecoByParaId.get(paraId);
+        const ecosystem = r.ecosystem;
         return {
           ecosystem: ecosystem,
           parachain: getTChain(
@@ -409,6 +408,7 @@ export class MessageService {
 
     whereConditions.push('ecosystem = $1');
     whereConditions.push('origin_block_timestamp BETWEEN $2 AND $3');
+    whereConditions.push("from_account_id <> ''");
     parameters.push(ecosystem, startTime, endTime);
 
     if (paraIds.length > 0) {
@@ -433,10 +433,10 @@ export class MessageService {
       AccountXcmCountResult[]
     >(query, parameters);
 
-    return results.map((account) => ({
+    return results.map((a) => ({
       ecosystem,
-      id: account.from_account_id,
-      count: parseInt(account.message_count, 10),
+      id: a.from_account_id,
+      count: parseInt(a.message_count, 10),
     }));
   }
 }

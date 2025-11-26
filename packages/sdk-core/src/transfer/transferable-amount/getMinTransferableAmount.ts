@@ -6,11 +6,13 @@ import {
 } from '@paraspell/assets'
 import { getEdFromAssetOrThrow } from '@paraspell/assets'
 
-import { getAssetBalanceInternal } from '../../pallets/assets/balance'
+import { getAssetBalanceInternal } from '../../balance'
+import { AmountTooLowError } from '../../errors'
 import type { TGetMinTransferableAmountOptions } from '../../types'
-import { abstractDecimals, validateAddress } from '../../utils'
+import { abstractDecimals, padValueBy, validateAddress } from '../../utils'
 import { dryRunInternal } from '../dry-run'
 import { getXcmFee as getXcmFeeInternal } from '../fees'
+import { FEE_PADDING } from '../type-and-then/computeFees'
 import { resolveFeeAsset } from '../utils'
 
 export const getMinTransferableAmountInternal = async <TApi, TRes>({
@@ -25,7 +27,7 @@ export const getMinTransferableAmountInternal = async <TApi, TRes>({
   buildTx,
   builder
 }: TGetMinTransferableAmountOptions<TApi, TRes>): Promise<bigint> => {
-  validateAddress(senderAddress, chain, false)
+  validateAddress(api, senderAddress, chain, false)
 
   const resolvedFeeAsset = feeAsset
     ? resolveFeeAsset(feeAsset, chain, destination, currency)
@@ -35,10 +37,6 @@ export const getMinTransferableAmountInternal = async <TApi, TRes>({
 
   const destAsset = findAssetOnDestOrThrow(origin, destination, currency)
 
-  const destCurrency = destAsset.location
-    ? { location: destAsset.location }
-    : { symbol: destAsset.symbol }
-
   const destApi = api.clone()
   await destApi.init(destination)
 
@@ -46,7 +44,7 @@ export const getMinTransferableAmountInternal = async <TApi, TRes>({
     api: destApi,
     address,
     chain: destination,
-    currency: destCurrency
+    asset: destAsset
   })
 
   const destEd = getEdFromAssetOrThrow(destAsset)
@@ -92,14 +90,33 @@ export const getMinTransferableAmountInternal = async <TApi, TRes>({
 
   const edComponent = destBalance === 0n ? destEd : 0n
 
-  const minAmount = hopFeeTotal + destinationFee + originFee + edComponent + 1n
+  let minAmount = hopFeeTotal + destinationFee + originFee + edComponent + 1n
 
-  const modifiedBuilder = builder.currency({
-    ...currency,
-    amount: minAmount
-  })
+  const createTx = async (amount: bigint) => {
+    const { tx } = await builder
+      .currency({
+        ...currency,
+        amount
+      })
+      ['buildInternal']()
+    return tx
+  }
 
-  const { tx } = await modifiedBuilder['buildInternal']()
+  let tx
+  try {
+    tx = await createTx(minAmount)
+  } catch (e) {
+    if (e instanceof AmountTooLowError) {
+      minAmount = padValueBy(minAmount, FEE_PADDING)
+      try {
+        tx = await createTx(minAmount)
+      } catch {
+        if (e instanceof AmountTooLowError) {
+          return 0n
+        }
+      }
+    }
+  }
 
   const dryRunResult = await dryRunInternal({
     api,

@@ -42,8 +42,8 @@ export const send = async <TApi, TRes>(options: TSendOptions<TApi, TRes>): Promi
   validateCurrency(currency, feeAsset)
   validateDestination(origin, destination)
 
-  validateDestinationAddress(address, destination)
-  if (senderAddress) validateAddress(senderAddress, origin, false)
+  validateDestinationAddress(address, destination, api)
+  if (senderAddress) validateAddress(api, senderAddress, origin, false)
 
   const isBridge = !isTLocation(destination) && isSubstrateBridge(origin, destination)
 
@@ -88,12 +88,12 @@ export const send = async <TApi, TRes>(options: TSendOptions<TApi, TRes>): Promi
       }
 
       await api.init(origin, TX_CLIENT_TIMEOUT_MS)
-      return api.callTxMethod(
+      return api.deserializeExtrinsics(
         isAmountAll
           ? {
               module: 'Balances',
               method: 'transfer_all',
-              parameters: {
+              params: {
                 dest: { Id: address },
                 keepAlive: true
               }
@@ -101,7 +101,7 @@ export const send = async <TApi, TRes>(options: TSendOptions<TApi, TRes>): Promi
           : {
               module: 'Balances',
               method: 'transfer_keep_alive',
-              parameters: {
+              params: {
                 dest: { Id: address },
                 value: finalAmount
               }

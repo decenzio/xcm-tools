@@ -10,8 +10,9 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IPolkadotApi } from '../../api'
+import { getAssetBalanceInternal } from '../../balance'
 import type { GeneralBuilder } from '../../builder'
-import { getAssetBalanceInternal } from '../../pallets/assets/balance'
+import { AmountTooLowError } from '../../errors'
 import type {
   TDryRunResult,
   TGetXcmFeeResult,
@@ -23,19 +24,13 @@ import { getXcmFee } from '../fees'
 import { resolveFeeAsset } from '../utils'
 import * as mod from './getMinTransferableAmount'
 
-vi.mock('@paraspell/assets', () => ({
-  findAssetInfoOrThrow: vi.fn(),
-  findAssetOnDestOrThrow: vi.fn(),
-  findNativeAssetInfoOrThrow: vi.fn(),
-  getEdFromAssetOrThrow: vi.fn(),
-  isAssetEqual: vi.fn((a: TAssetInfo, b: TAssetInfo) => a?.symbol === b?.symbol)
-}))
+vi.mock('@paraspell/assets')
 
 vi.mock('../../utils')
 vi.mock('../utils')
 vi.mock('../fees')
 vi.mock('../dry-run')
-vi.mock('../../pallets/assets/balance')
+vi.mock('../../balance')
 
 const makeApis = () => {
   const destApi = { init: vi.fn() } as unknown as IPolkadotApi<unknown, unknown>
@@ -56,8 +51,14 @@ describe('getMinTransferableAmountInternal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(abstractDecimals).mockReturnValue(100n)
+    vi.mocked(isAssetEqual).mockImplementation(
+      (a: TAssetInfo, b: TAssetInfo) => a?.symbol === b?.symbol
+    )
     vi.mocked(resolveFeeAsset).mockReturnValue(undefined)
     vi.mocked(dryRunInternal).mockResolvedValue({} as TDryRunResult)
+    vi.mocked(isAssetEqual).mockImplementation(
+      (a: TAssetInfo, b: TAssetInfo) => a?.symbol === b?.symbol
+    )
     mockBuilder = {
       currency: vi.fn().mockReturnThis(),
       buildInternal: vi.fn().mockReturnValue({} as unknown)
@@ -72,7 +73,7 @@ describe('getMinTransferableAmountInternal', () => {
     const { api, destApi } = makeApis()
 
     const asset = { symbol: 'ASSET', decimals: 12 } as TAssetInfo
-    const destAsset = { symbol: 'ASSET', location: {} as unknown } as TAssetInfo
+    const destAsset = { symbol: 'ASSET', location: {} } as TAssetInfo
     const nativeAsset = { symbol: 'ASSET' } as TAssetInfo
 
     vi.mocked(findAssetInfoOrThrow).mockReturnValue(asset)
@@ -109,7 +110,7 @@ describe('getMinTransferableAmountInternal', () => {
     // 2 + 3 + 7 + 10 + 1 = 23
     expect(res).toBe(23n)
 
-    expect(validateAddress).toHaveBeenCalledWith('SENDER', 'Acala', false)
+    expect(validateAddress).toHaveBeenCalledWith(api, 'SENDER', 'Acala', false)
     expect(api.clone).toHaveBeenCalled()
     expect(destApi.init).toHaveBeenCalledWith('Astar')
     expect(getAssetBalanceInternal).toHaveBeenCalledWith(
@@ -117,7 +118,7 @@ describe('getMinTransferableAmountInternal', () => {
         api: destApi,
         address: 'DEST_ADDR',
         chain: 'Astar',
-        currency: expect.objectContaining({ location: expect.anything() })
+        asset: destAsset
       })
     )
     expect(abstractDecimals).toHaveBeenCalledWith(1n, 12, api)
@@ -159,7 +160,7 @@ describe('getMinTransferableAmountInternal', () => {
       destination: {}
     } as unknown as TGetXcmFeeResult)
 
-    const out = await mod.getMinTransferableAmountInternal<unknown, unknown>({
+    const out = await mod.getMinTransferableAmountInternal({
       api,
       origin: 'Acala',
       senderAddress: 'S1',
@@ -176,9 +177,10 @@ describe('getMinTransferableAmountInternal', () => {
 
     expect(getAssetBalanceInternal).toHaveBeenCalledWith(
       expect.objectContaining({
-        currency: { symbol: 'A' }
+        asset
       })
     )
+
     expect(resolveFeeAsset).toHaveBeenCalled()
   })
 
@@ -188,7 +190,7 @@ describe('getMinTransferableAmountInternal', () => {
     vi.mocked(findAssetInfoOrThrow).mockReturnValue({ symbol: 'A' } as TAssetInfo)
     vi.mocked(findAssetOnDestOrThrow).mockReturnValue({
       symbol: 'A',
-      location: {} as unknown
+      location: {}
     } as TAssetInfo)
     vi.mocked(findNativeAssetInfoOrThrow).mockReturnValue({ symbol: 'A' } as TAssetInfo)
     vi.mocked(getEdFromAssetOrThrow).mockReturnValue(1n)
@@ -202,7 +204,7 @@ describe('getMinTransferableAmountInternal', () => {
       failureReason: 'Nope'
     } as unknown as TDryRunResult)
 
-    const res = await mod.getMinTransferableAmountInternal<unknown, unknown>({
+    const res = await mod.getMinTransferableAmountInternal({
       api,
       origin: 'Acala',
       senderAddress: 'S1',
@@ -223,7 +225,7 @@ describe('getMinTransferableAmountInternal', () => {
     vi.mocked(findNativeAssetInfoOrThrow).mockReturnValue({ symbol: 'B' } as TAssetInfo)
     vi.mocked(findAssetOnDestOrThrow).mockReturnValue({
       symbol: 'B',
-      location: {} as unknown
+      location: {}
     } as TAssetInfo)
     vi.mocked(getAssetBalanceInternal).mockResolvedValue(0n)
     vi.mocked(getEdFromAssetOrThrow).mockReturnValue(4n)
@@ -233,7 +235,7 @@ describe('getMinTransferableAmountInternal', () => {
       destination: { asset: { symbol: 'B' }, fee: 7n }
     } as TGetXcmFeeResult)
 
-    const out = await mod.getMinTransferableAmountInternal<unknown, unknown>({
+    const out = await mod.getMinTransferableAmountInternal({
       api,
       origin: 'Acala',
       senderAddress: 'S',
@@ -246,5 +248,46 @@ describe('getMinTransferableAmountInternal', () => {
 
     // Only ED(4) + 1
     expect(out).toBe(5n)
+  })
+
+  it('returns 0n when createTx keeps failing with AmountTooLowError (even after padding)', async () => {
+    const { api } = makeApis()
+
+    vi.mocked(findAssetInfoOrThrow).mockReturnValue({
+      symbol: 'ASSET',
+      decimals: 12
+    } as TAssetInfo)
+    vi.mocked(findAssetOnDestOrThrow).mockReturnValue({
+      symbol: 'ASSET',
+      location: {}
+    } as TAssetInfo)
+    vi.mocked(findNativeAssetInfoOrThrow).mockReturnValue({
+      symbol: 'ASSET'
+    } as TAssetInfo)
+    vi.mocked(getEdFromAssetOrThrow).mockReturnValue(0n)
+    vi.mocked(getAssetBalanceInternal).mockResolvedValue(0n)
+    vi.mocked(getXcmFee).mockResolvedValue({
+      origin: undefined,
+      hops: [],
+      destination: undefined
+    } as unknown as TGetXcmFeeResult)
+
+    const error = new AmountTooLowError()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.spyOn(mockBuilder as any, 'buildInternal').mockRejectedValue(error)
+
+    const result = await mod.getMinTransferableAmountInternal({
+      api,
+      origin: 'Acala',
+      senderAddress: 'SENDER',
+      address: 'DEST',
+      destination: 'Astar',
+      currency: { symbol: 'ASSET', amount: 1n },
+      builder: mockBuilder,
+      buildTx
+    })
+
+    expect(result).toBe(0n)
+    expect(dryRunInternal).not.toHaveBeenCalled()
   })
 })

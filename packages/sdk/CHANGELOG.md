@@ -1,5 +1,22 @@
 # Changelog
 
+## [11.14.4](https://github.com/paraspell/xcm-tools/compare/sdk-v11.14.3...sdk-v11.14.4) (2025-11-21)
+
+
+### Bug Fixes
+
+* **sdk-core:** Add SDK level address validation 📕 ([57c6a2c](https://github.com/paraspell/xcm-tools/commit/57c6a2c9aaef9d0e152d6f4f1de1fe668237f9bc))
+* **sdk-core:** Use TypeAndThen for BILL asset 🔧 ([ad07a47](https://github.com/paraspell/xcm-tools/commit/ad07a47dc59d9298ddc2c364db87c5efd42d078e))
+
+## [11.14.3](https://github.com/paraspell/xcm-tools/compare/sdk-v11.14.2...sdk-v11.14.3) (2025-11-19)
+
+
+### Bug Fixes
+
+* Fix router moonbeam transfers & SDK acala balance 🔧 ([baaf2b8](https://github.com/paraspell/xcm-tools/commit/baaf2b8cbd3c7bb13c70ac5d32950e31d0c28994))
+* **sdk-core:** Fix min transferable amount incorrect result 🛠️ ([#1469](https://github.com/paraspell/xcm-tools/issues/1469)) ([a964629](https://github.com/paraspell/xcm-tools/commit/a964629012989c0e18b3e590e6dc723e20681f97))
+* **xcm-router:** Fix AcalaDex balance validation in getXcmFees 🔧 ([#1470](https://github.com/paraspell/xcm-tools/issues/1470)) ([0aaf854](https://github.com/paraspell/xcm-tools/commit/0aaf854a9fd5ae890284294dafad2e58e51416ee))
+
 ## [11.14.2](https://github.com/paraspell/xcm-tools/compare/sdk-v11.14.1...sdk-v11.14.2) (2025-11-14)
 
 

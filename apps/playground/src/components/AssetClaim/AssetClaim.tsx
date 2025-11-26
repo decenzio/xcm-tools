@@ -12,7 +12,6 @@ import {
   Parents,
   type TPapiApiOrUrl,
   type TPapiTransaction,
-  validateAddress,
 } from '@paraspell/sdk';
 import type {
   Extrinsic,
@@ -124,8 +123,6 @@ const AssetClaim = () => {
           .build();
         api = builder.getApi();
       }
-
-      validateAddress(selectedAccount.address, from, false);
 
       if (apiType === 'PAPI') {
         await submitTransactionPapi(
