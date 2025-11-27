@@ -1,11 +1,5 @@
-import type {
-  TChain,
-  TEvmChainFrom,
-  TSubstrateChain} from '@paraspell/sdk';
-import {
-  CHAINS,
-  SUBSTRATE_CHAINS
-} from '@paraspell/sdk';
+import type { TChain, TEvmChainFrom, TSubstrateChain } from '@paraspell/sdk';
+import { CHAINS, SUBSTRATE_CHAINS } from '@paraspell/sdk';
 import type { TExchangeChain } from '@paraspell/xcm-router';
 import { EXCHANGE_CHAINS } from '@paraspell/xcm-router';
 import { createParser } from 'nuqs';
@@ -71,7 +65,7 @@ export const parseAsSubstrateChain = createParser({
 
 export const parseAsChain = createParser({
   parse(query) {
-    return isValidChain(query) ? (query) : null;
+    return isValidChain(query) ? query : null;
   },
   serialize(value) {
     return value;
