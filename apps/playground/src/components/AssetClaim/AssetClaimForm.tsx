@@ -1,15 +1,16 @@
 import { Button, Paper, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import type { TSubstrateChain } from '@paraspell/sdk';
+import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { type FC, useEffect } from 'react';
 
-import {
-  useAssetClaimFilterSync,
-  useAssetClaimState,
-  useAutoFillWalletAddress,
-  useWallet,
-} from '../../hooks';
+import { DEFAULT_ADDRESS } from '../../constants';
+import { useAutoFillWalletAddress, useWallet } from '../../hooks';
 import { isValidWalletAddress } from '../../utils';
+import {
+  parseAsAssetClaimChain,
+  parseAsRecipientAddress,
+} from '../../utils/routes/parsers';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { CurrencyInfo } from '../CurrencyInfo';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
@@ -34,15 +35,15 @@ type Props = {
 };
 
 const AssetClaimForm: FC<Props> = ({ onSubmit, loading }) => {
-  const urlValues = useAssetClaimState();
+  const [queryState, setQueryState] = useQueryStates({
+    from: parseAsAssetClaimChain.withDefault('Polkadot'),
+    amount: parseAsString.withDefault(''),
+    address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+    useApi: parseAsBoolean.withDefault(false),
+  });
 
   const form = useForm<FormValues>({
-    initialValues: {
-      from: urlValues.from,
-      amount: urlValues.amount,
-      address: urlValues.address,
-      useApi: urlValues.useApi,
-    },
+    initialValues: queryState,
 
     validate: {
       address: (value) =>
@@ -54,7 +55,9 @@ const AssetClaimForm: FC<Props> = ({ onSubmit, loading }) => {
   });
 
   useAutoFillWalletAddress(form, 'address');
-  useAssetClaimFilterSync(form);
+  useEffect(() => {
+    void setQueryState(form.values);
+  }, [form.values, setQueryState]);
 
   const { useApi } = form.getValues();
 

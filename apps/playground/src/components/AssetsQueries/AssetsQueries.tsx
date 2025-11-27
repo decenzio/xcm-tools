@@ -18,7 +18,6 @@ import {
 import { useEffect, useState } from 'react';
 
 import { useWallet } from '../../hooks';
-import AssetQueryStateProvider from '../../providers/AssetQueryState/AssetQueryStateProvider';
 import type { TAssetsQuery } from '../../types';
 import { fetchFromApi } from '../../utils';
 import { getApiEndpoint } from '../../utils/assets/apiMappings';
@@ -180,9 +179,7 @@ export const AssetsQueries = () => {
             like asset decimals and registered assets.
           </Text>
         </Box>
-        <AssetQueryStateProvider>
-          <AssetsQueriesForm onSubmit={onSubmit} loading={loading} />
-        </AssetQueryStateProvider>
+        <AssetsQueriesForm onSubmit={onSubmit} loading={loading} />
       </Stack>
       <Center ref={targetRef}>
         {errorAlertOpened && (

@@ -36,7 +36,6 @@ import type { PolkadotClient, PolkadotSigner } from 'polkadot-api';
 import { useEffect, useState } from 'react';
 
 import { useWallet } from '../../hooks';
-import XcmTransferStateProvider from '../../providers/XcmTrasferState/XcmTransferStateProvider';
 import type { TSubmitType } from '../../types';
 import {
   fetchFromApi,
@@ -680,14 +679,12 @@ const XcmTransfer = () => {
             </Text>
           </Box>
 
-          <XcmTransferStateProvider>
-            <XcmTransferForm
-              onSubmit={onSubmit}
-              loading={loading}
-              isBatchMode={batchItems.length > 0}
-              isVisible={currentPage === batchItems.length + 1}
-            />
-          </XcmTransferStateProvider>
+          <XcmTransferForm
+            onSubmit={onSubmit}
+            loading={loading}
+            isBatchMode={batchItems.length > 0}
+            isVisible={currentPage === batchItems.length + 1}
+          />
 
           {currentPage !== batchItems.length + 1 && (
             <XcmTransferForm

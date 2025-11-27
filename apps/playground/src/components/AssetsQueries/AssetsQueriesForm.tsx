@@ -16,16 +16,21 @@ import {
   isRelayChain,
   PARACHAINS,
 } from '@paraspell/sdk';
+import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { type FC, useEffect, useRef } from 'react';
 
+import { DEFAULT_ADDRESS } from '../../constants';
 import { ASSET_QUERIES } from '../../consts';
-import {
-  useAssetQueryFilterSync,
-  useAssetQueryState,
-  useAutoFillWalletAddress,
-  useWallet,
-} from '../../hooks';
+import { useAutoFillWalletAddress, useWallet } from '../../hooks';
 import type { TAssetsQuery } from '../../types';
+import {
+  parseAsAssetQuery,
+  parseAsChain,
+  parseAsCurrencyType,
+  parseAsCustomCurrencySymbolSpecifier,
+  parseAsRecipientAddress,
+  parseAsSubstrateChain,
+} from '../../utils/routes/parsers';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 
@@ -55,24 +60,28 @@ type Props = {
 };
 
 export const AssetsQueriesForm: FC<Props> = ({ onSubmit, loading }) => {
-  const urlValues = useAssetQueryState();
-
-  const form = useForm<FormValues>({
-    initialValues: {
-      func: urlValues.func,
-      chain: urlValues.chain,
-      destination: urlValues.destination,
-      currency: urlValues.currency,
-      address: urlValues.address,
-      amount: urlValues.amount,
-      useApi: urlValues.useApi,
-      currencyType: urlValues.currencyType,
-      customCurrencySymbolSpecifier: urlValues.customCurrencySymbolSpecifier,
-    },
+  const [queryState, setQueryState] = useQueryStates({
+    func: parseAsAssetQuery.withDefault('ASSETS_OBJECT'),
+    chain: parseAsSubstrateChain.withDefault('Acala'),
+    destination: parseAsChain.withDefault('Astar'),
+    currency: parseAsString.withDefault(''),
+    address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+    amount: parseAsString.withDefault(''),
+    useApi: parseAsBoolean.withDefault(false),
+    currencyType: parseAsCurrencyType.withDefault('symbol' as TCurrencyType),
+    customCurrencySymbolSpecifier:
+      parseAsCustomCurrencySymbolSpecifier.withDefault('auto'),
   });
 
+  const form = useForm<FormValues>({
+    initialValues: queryState,
+  });
+
+  useEffect(() => {
+    void setQueryState(form.values);
+  }, [form.values, setQueryState]);
+
   useAutoFillWalletAddress(form, 'address');
-  useAssetQueryFilterSync(form);
 
   const { func, chain, currencyType, useApi } = form.getValues();
 

@@ -26,19 +26,31 @@ import {
   IconTransfer,
   IconTrash,
 } from '@tabler/icons-react';
+import {
+  parseAsBoolean,
+  parseAsJson,
+  parseAsNativeArrayOf,
+  parseAsString,
+  useQueryStates,
+} from 'nuqs';
 import type { FC } from 'react';
 import { useEffect } from 'react';
+import z from 'zod';
 
+import { DEFAULT_ADDRESS } from '../../constants';
 import {
   useAutoFillWalletAddress,
   useCurrencyOptions,
   useFeeCurrencyOptions,
   useWallet,
-  useXcmTransferFilterSync,
-  useXcmTransferState,
 } from '../../hooks';
 import type { TSubmitType } from '../../types';
 import { isValidPolkadotAddress, isValidWalletAddress } from '../../utils';
+import {
+  parseAsChain,
+  parseAsRecipientAddress,
+  parseAsSubstrateChain,
+} from '../../utils/routes/parsers';
 import { CurrencySelection } from '../common/CurrencySelection';
 import { FeeAssetSelection } from '../common/FeeAssetSelection';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
@@ -85,25 +97,66 @@ type Props = {
   isVisible?: boolean;
 };
 
+const TCurrencyEntrySchema = z.object({
+  currencyOptionId: z.string(),
+  customCurrency: z.string(),
+  amount: z.string(),
+  isCustomCurrency: z.boolean(),
+  isMax: z.boolean().optional(),
+  customCurrencyType: z
+    .enum(['id', 'symbol', 'location', 'overridenLocation'])
+    .optional(),
+  customCurrencySymbolSpecifier: z
+    .enum(['auto', 'native', 'foreign', 'foreignAbstract'])
+    .optional(),
+});
+
+export const FeeAssetSchema = TCurrencyEntrySchema.omit({
+  amount: true,
+  isMax: true,
+});
+
 const XcmUtilsForm: FC<Props> = ({
   onSubmit,
   loading,
   initialValues,
   isVisible = true,
 }) => {
-  const urlValues = useXcmTransferState();
+  const [queryState, setQueryState] = useQueryStates(
+    {
+      from: parseAsSubstrateChain.withDefault('Astar'),
+      to: parseAsChain.withDefault('Hydration'),
+      currencies: parseAsNativeArrayOf(
+        parseAsJson(TCurrencyEntrySchema),
+      ).withDefault([
+        {
+          currencyOptionId: '',
+          customCurrency: '',
+          amount: '10',
+          isCustomCurrency: false,
+          isMax: false,
+          customCurrencyType: 'id',
+          customCurrencySymbolSpecifier: 'auto',
+        },
+      ]),
+      feeAsset: parseAsJson(FeeAssetSchema).withDefault({
+        currencyOptionId: '',
+        customCurrency: '',
+        isCustomCurrency: false,
+        customCurrencyType: 'symbol',
+        customCurrencySymbolSpecifier: 'auto',
+      }),
+
+      address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+      ahAddress: parseAsString.withDefault(''),
+      useApi: parseAsBoolean.withDefault(false),
+      useXcmFormatCheck: parseAsBoolean.withDefault(false),
+    },
+    { clearOnDefault: false },
+  );
 
   const form = useForm<FormValues>({
-    initialValues: initialValues ?? {
-      from: urlValues.from,
-      to: urlValues.to,
-      currencies: urlValues.currencies,
-      feeAsset: urlValues.feeAsset,
-      address: urlValues.address,
-      ahAddress: urlValues.ahAddress,
-      useApi: urlValues.useApi,
-      useXcmFormatCheck: urlValues.useXcmFormatCheck,
-    },
+    initialValues: initialValues ?? queryState,
 
     validate: {
       address: (value) =>
@@ -147,8 +200,9 @@ const XcmUtilsForm: FC<Props> = ({
   });
 
   useAutoFillWalletAddress(form, 'address');
-  useXcmTransferFilterSync(form);
-
+  useEffect(() => {
+    void setQueryState(form.values);
+  }, [form.values, setQueryState]);
   const { from, to, currencies, useApi } = form.getValues();
 
   const { currencyOptions, currencyMap, isNotParaToPara } = useCurrencyOptions(

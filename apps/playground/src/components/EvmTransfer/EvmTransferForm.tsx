@@ -12,17 +12,22 @@ import { useForm } from '@mantine/form';
 import type { TAssetInfo, TChain, TEvmChainFrom } from '@paraspell/sdk';
 import { CHAINS, getTokenBalance } from '@paraspell/sdk-pjs';
 import { type BrowserProvider, ethers, formatEther } from 'ethers';
+import { parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import { type FC, type FormEvent, useEffect, useState } from 'react';
 
+import { DEFAULT_ADDRESS } from '../../constants';
 import {
   useAutoFillWalletAddress,
   useCurrencyOptions,
-  useEvmTransferFilterSync,
-  useEvmTransferState,
   useWallet,
 } from '../../hooks';
 import type { TEvmSubmitType } from '../../types';
 import { isValidPolkadotAddress } from '../../utils';
+import {
+  parseAsChain,
+  parseAsEvmChain,
+  parseAsRecipientAddress,
+} from '../../utils/routes/parsers';
 import { CurrencyInfo } from '../CurrencyInfo';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 
@@ -47,18 +52,18 @@ type Props = {
 };
 
 const EvmTransferForm: FC<Props> = ({ onSubmit, loading, provider }) => {
-  const urlValues = useEvmTransferState();
+  const [queryState, setQueryState] = useQueryStates({
+    from: parseAsEvmChain.withDefault('Ethereum'),
+    to: parseAsChain.withDefault('AssetHubPolkadot'),
+    currencyOptionId: parseAsString.withDefault(''),
+    amount: parseAsString.withDefault('10'),
+    address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+    ahAddress: parseAsString.withDefault(''),
+    useViem: parseAsBoolean.withDefault(false),
+  });
 
   const form = useForm<FormValues>({
-    initialValues: {
-      from: urlValues.from,
-      to: urlValues.to,
-      currencyOptionId: urlValues.currencyOptionId,
-      amount: urlValues.amount,
-      address: urlValues.address,
-      ahAddress: urlValues.ahAddress,
-      useViem: urlValues.useViem,
-    },
+    initialValues: queryState,
 
     validate: {
       address: (value) =>
@@ -74,7 +79,9 @@ const EvmTransferForm: FC<Props> = ({ onSubmit, loading, provider }) => {
   });
 
   useAutoFillWalletAddress(form, 'address');
-  useEvmTransferFilterSync(form);
+  useEffect(() => {
+    void setQueryState(form.values);
+  }, [form.values, setQueryState]);
 
   const { from } = form.getValues();
 

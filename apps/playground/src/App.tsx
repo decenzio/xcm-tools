@@ -11,10 +11,10 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import hljs from 'highlight.js/lib/core';
 import tsLang from 'highlight.js/lib/languages/typescript';
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v7';
 import { BrowserRouter } from 'react-router-dom';
 
 import { AppShell } from './components/AppShell/AppShell';
-import SelectedApiTypeProvider from './providers/SelectedApiType/SelectedApiTypeProvider';
 import { WalletProvider } from './providers/WalletProvider';
 import { theme } from './theme/themeConfig';
 
@@ -25,14 +25,14 @@ const highlightJsAdapter = createHighlightJsAdapter(hljs);
 const App = () => (
   <BrowserRouter>
     <MantineProvider theme={theme}>
-      <SelectedApiTypeProvider>
+      <NuqsAdapter>
         <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
           <Notifications />
           <WalletProvider>
             <AppShell />
           </WalletProvider>
         </CodeHighlightAdapterProvider>
-      </SelectedApiTypeProvider>
+      </NuqsAdapter>
     </MantineProvider>
   </BrowserRouter>
 );

@@ -5,6 +5,7 @@ import {
   web3FromAddress,
   web3FromSource,
 } from '@polkadot/extension-dapp';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import {
   connectInjectedExtension,
   getInjectedExtensions,
@@ -14,10 +15,9 @@ import type { PropsWithChildren } from 'react';
 import { useEffect, useState } from 'react';
 
 import AccountSelectModal from '../components/AccountSelectModal/AccountSelectModal';
+import { PageRoute } from '../components/PageRoute';
 import PolkadotWalletSelectModal from '../components/WalletSelectModal/WalletSelectModal';
 import { DAPP_NAME } from '../constants';
-import { useSelectedApiType } from '../hooks';
-import { useSelectedApiTypeFilterSync } from '../hooks/useFilterSync';
 import type { TApiType, TWalletAccount } from '../types';
 import { showErrorNotification } from '../utils/notifications';
 import { WalletContext } from './WalletContext';
@@ -62,13 +62,18 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
   ] = useDisclosure(false);
 
   const [isLoadingExtensions, setIsLoadingExtensions] = useState(false);
-  const { selectedApiType, setSelectedApiType } = useSelectedApiType();
+  const [queryApiType, setQueryApiType] = useQueryState(
+    'apiType',
+    parseAsStringLiteral(['PAPI', 'PJS'])
+      .withDefault('PAPI')
+      .withOptions({ shallow: false }),
+  );
+  const isRouter = location.pathname === PageRoute.XCM_ROUTER.toString();
+  const selectedApiType = isRouter ? 'PAPI' : queryApiType;
 
   const [apiType, setApiType] = useState<TApiType>(
     selectedApiType || getApiTypeFromLocalStorage() || DEFAULT_API_TYPE,
   );
-
-  useSelectedApiTypeFilterSync();
 
   const [extensions, setExtensions] = useState<string[]>([]);
   const [injectedExtension, setInjectedExtension] =
@@ -86,9 +91,9 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
   useEffect(() => {
     if (apiType) {
       localStorage.setItem(STORAGE_API_TYPE_KEY, apiType);
-      setSelectedApiType(apiType);
+      void setQueryApiType(apiType);
     }
-  }, [apiType]);
+  }, [apiType, setQueryApiType]);
 
   useEffect(() => {
     if (!isInitialized) return;

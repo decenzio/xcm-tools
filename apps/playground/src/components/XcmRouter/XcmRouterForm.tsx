@@ -33,6 +33,12 @@ import {
   IconLocationCheck,
 } from '@tabler/icons-react';
 import { ethers } from 'ethers';
+import {
+  parseAsBoolean,
+  parseAsNativeArrayOf,
+  parseAsString,
+  useQueryStates,
+} from 'nuqs';
 import type { PolkadotSigner } from 'polkadot-api';
 import {
   connectInjectedExtension,
@@ -42,16 +48,21 @@ import {
 import type { FC, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 
+import { DEFAULT_ADDRESS } from '../../constants';
 import {
   useAutoFillWalletAddress,
   useRouterCurrencyOptions,
   useWallet,
-  useXcmRouterFilterSync,
-  useXcmRouterState,
 } from '../../hooks';
 import type { TRouterSubmitType, TWalletAccount } from '../../types';
 import { isValidWalletAddress } from '../../utils';
 import { showErrorNotification } from '../../utils/notifications';
+import {
+  parseAsChain,
+  parseAsExchangeChain,
+  parseAsRecipientAddress,
+  parseAsSubstrateChain,
+} from '../../utils/routes/parsers';
 import AccountSelectModal from '../AccountSelectModal/AccountSelectModal';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { CurrencyInfo } from '../CurrencyInfo';
@@ -125,20 +136,20 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     form.setFieldValue('evmInjectorAddress', selectedAccount.address);
   }, [selectedAccount, injectedExtension]);
 
-  const urlValues = useXcmRouterState();
+  const [queryState, setQueryState] = useQueryStates({
+    from: parseAsSubstrateChain.withDefault('Astar'),
+    exchange: parseAsNativeArrayOf(parseAsExchangeChain),
+    to: parseAsChain.withDefault('Hydration'),
+    currencyFromOptionId: parseAsString.withDefault(''),
+    currencyToOptionId: parseAsString.withDefault(''),
+    amount: parseAsString.withDefault('10'),
+    recipientAddress: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+    slippagePct: parseAsString.withDefault(''),
+    useApi: parseAsBoolean.withDefault(false),
+  });
 
   const form = useForm<TRouterFormValues>({
-    initialValues: {
-      from: urlValues.from,
-      exchange: urlValues.exchange,
-      to: urlValues.to,
-      currencyFromOptionId: urlValues.currencyFromOptionId,
-      currencyToOptionId: urlValues.currencyToOptionId,
-      amount: urlValues.amount,
-      recipientAddress: urlValues.recipientAddress,
-      slippagePct: urlValues.slippagePct,
-      useApi: urlValues.useApi,
-    },
+    initialValues: queryState,
 
     validate: {
       recipientAddress: (value) =>
@@ -163,7 +174,10 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   });
 
   useAutoFillWalletAddress(form, 'recipientAddress');
-  useXcmRouterFilterSync(form);
+
+  useEffect(() => {
+    void setQueryState(form.values);
+  }, [form.values, setQueryState]);
 
   const { from, to, exchange } = form.getValues();
 

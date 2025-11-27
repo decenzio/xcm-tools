@@ -17,7 +17,6 @@ import {
 } from '@paraspell/sdk';
 import { useEffect, useState } from 'react';
 
-import PalletQueryStateProvider from '../../providers/PalletQueryState/PalletQueryStateProvider';
 import { fetchFromApi } from '../../utils';
 import { showErrorNotification } from '../../utils/notifications';
 import { ErrorAlert } from '../common/ErrorAlert';
@@ -146,9 +145,7 @@ const PalletsQueries = () => {
             a given chain.
           </Text>
         </Box>
-        <PalletQueryStateProvider>
-          <PalletsQueriesForm onSubmit={onSubmit} loading={loading} />
-        </PalletQueryStateProvider>
+        <PalletsQueriesForm onSubmit={onSubmit} loading={loading} />
       </Stack>
       <Center ref={targetRef}>
         {errorAlertOpened && (
