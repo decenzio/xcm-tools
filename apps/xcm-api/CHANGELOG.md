@@ -1,5 +1,19 @@
 # Changelog
 
+## [11.14.6](https://github.com/paraspell/xcm-tools/compare/xcm-api-v11.14.5...xcm-api-v11.14.6) (2025-11-26)
+
+
+### Bug Fixes
+
+* add error handling to getAssetBalance endpoint ([8fc18a7](https://github.com/paraspell/xcm-tools/commit/8fc18a7a9fde78d5e42fe861b7401644d71dba2f))
+
+## [11.14.5](https://github.com/paraspell/xcm-tools/compare/xcm-api-v11.14.4...xcm-api-v11.14.5) (2025-11-25)
+
+
+### Code Refactoring
+
+* **sdk-core:** Fully refactor balance logic 🧹 ([028d65d](https://github.com/paraspell/xcm-tools/commit/028d65d975e93a614e10ed5a8e853cf5eab9fd7b))
+
 ## [11.14.4](https://github.com/paraspell/xcm-tools/compare/xcm-api-v11.14.3...xcm-api-v11.14.4) (2025-11-21)
 
 
