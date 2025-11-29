@@ -13,6 +13,7 @@ import {
 } from 'polkadot-api/pjs-signer';
 import type { PropsWithChildren } from 'react';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import AccountSelectModal from '../components/AccountSelectModal/AccountSelectModal';
 import { PageRoute } from '../components/PageRoute';
@@ -68,6 +69,7 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
       .withDefault('PAPI')
       .withOptions({ shallow: false }),
   );
+  const location = useLocation();
   const isRouter = location.pathname === PageRoute.XCM_ROUTER.toString();
   const selectedApiType = isRouter ? 'PAPI' : queryApiType;
 

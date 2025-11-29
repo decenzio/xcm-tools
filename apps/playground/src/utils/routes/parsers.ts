@@ -39,8 +39,8 @@ function isValidAssetClaimChain(
   );
 }
 
-function isValidExchangeChain(value: string): value is TExchangeChain {
-  return EXCHANGE_CHAINS.includes(value as TExchangeChain);
+function isValidExchangeChain(value: string | null): value is TExchangeChain {
+  return value !== null && EXCHANGE_CHAINS.includes(value as TExchangeChain);
 }
 
 function isValidAssetQuery(value: string | null): value is TAssetsQuery {
@@ -58,9 +58,6 @@ export const parseAsSubstrateChain = createParser({
   serialize(value) {
     return value;
   },
-  eq(a, b) {
-    return a === b;
-  },
 });
 
 export const parseAsChain = createParser({
@@ -69,9 +66,6 @@ export const parseAsChain = createParser({
   },
   serialize(value) {
     return value;
-  },
-  eq(a, b) {
-    return a === b;
   },
 });
 
@@ -82,9 +76,6 @@ export const parseAsEvmChain = createParser({
   serialize(value) {
     return value;
   },
-  eq(a, b) {
-    return a === b;
-  },
 });
 
 export const parseAsAssetClaimChain = createParser({
@@ -93,9 +84,6 @@ export const parseAsAssetClaimChain = createParser({
   },
   serialize(value) {
     return value;
-  },
-  eq(a, b) {
-    return a === b;
   },
 });
 
@@ -106,9 +94,6 @@ export const parseAsExchangeChain = createParser({
   serialize(value) {
     return value;
   },
-  eq(a, b) {
-    return a === b;
-  },
 });
 
 export const parseAsAssetQuery = createParser({
@@ -117,9 +102,6 @@ export const parseAsAssetQuery = createParser({
   },
   serialize(value) {
     return value;
-  },
-  eq(a, b) {
-    return a === b;
   },
 });
 
@@ -130,9 +112,6 @@ export const parseAsPalletsQuery = createParser({
   serialize(value) {
     return value;
   },
-  eq(a, b) {
-    return a === b;
-  },
 });
 
 export const parseAsRecipientAddress = createParser({
@@ -141,9 +120,6 @@ export const parseAsRecipientAddress = createParser({
   },
   serialize(value) {
     return value;
-  },
-  eq(a, b) {
-    return a === b;
   },
 });
 
@@ -156,9 +132,6 @@ export const parseAsCurrencyType = createParser({
   serialize(value) {
     return value;
   },
-  eq(a, b) {
-    return a === b;
-  },
 });
 
 export const parseAsCustomCurrencySymbolSpecifier = createParser({
@@ -170,8 +143,5 @@ export const parseAsCustomCurrencySymbolSpecifier = createParser({
   },
   serialize(value) {
     return value;
-  },
-  eq(a, b) {
-    return a === b;
   },
 });
