@@ -183,7 +183,12 @@ export const AdvancedOptionsAccordion = <
                             leftSection={<IconPlus size={16} />}
                             data-testid="button-add-endpoint"
                             onClick={() =>
-                              form.insertListItem(
+                              (
+                                form.insertListItem as (
+                                  path: string,
+                                  item: string,
+                                ) => void
+                              )(
                                 `customEndpoints.${chainIndex}.endpoints`,
                                 '',
                               )
@@ -203,7 +208,12 @@ export const AdvancedOptionsAccordion = <
                   leftSection={<IconPlus size={16} />}
                   data-testid="button-add-chain"
                   onClick={() =>
-                    form.insertListItem('customEndpoints', {
+                    (
+                      form.insertListItem as (
+                        path: string,
+                        item: TCustomEndpoint,
+                      ) => void
+                    )('customEndpoints', {
                       chain: 'Astar' as TChain,
                       endpoints: [''],
                     })
