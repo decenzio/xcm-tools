@@ -64,6 +64,10 @@ import {
   parseAsSubstrateChain,
 } from '../../utils/routes/parsers';
 import AccountSelectModal from '../AccountSelectModal/AccountSelectModal';
+import {
+  AdvancedOptionsAccordion,
+  type AdvancedRouterOptions,
+} from '../AdvancedOptionsAccordion/AdvancedOptionsAccordion';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { CurrencyInfo } from '../CurrencyInfo';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
@@ -81,7 +85,7 @@ export type TRouterFormValues = {
   useApi: boolean;
   evmSigner?: PolkadotSigner;
   evmInjectorAddress?: string;
-};
+} & AdvancedRouterOptions;
 
 export type TRouterFormValuesTransformed = Omit<
   TRouterFormValues,
@@ -98,9 +102,16 @@ type Props = {
     submitType: TRouterSubmitType,
   ) => void;
   loading: boolean;
+  advancedOptions?: AdvancedRouterOptions;
+  onAdvancedOptionsChange?: (options: AdvancedRouterOptions) => void;
 };
 
-export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
+export const XcmRouterForm: FC<Props> = ({
+  onSubmit,
+  loading,
+  advancedOptions,
+  onAdvancedOptionsChange,
+}) => {
   const [
     walletSelectModalOpened,
     { open: openWalletSelectModal, close: closeWalletSelectModal },
@@ -149,7 +160,7 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   });
 
   const form = useForm<TRouterFormValues>({
-    initialValues: queryState,
+    initialValues: { ...queryState, ...advancedOptions },
 
     validate: {
       recipientAddress: (value) =>
@@ -176,8 +187,23 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   useAutoFillWalletAddress(form, 'recipientAddress');
 
   useEffect(() => {
-    void setQueryState(form.values);
+    const { isDevelopment, abstractDecimals, customEndpoints, ...restValues } =
+      form.values;
+    void setQueryState(restValues);
   }, [form.values, setQueryState]);
+
+  useEffect(() => {
+    const { isDevelopment, abstractDecimals, customEndpoints } = form.values;
+    void onAdvancedOptionsChange?.({
+      isDevelopment,
+      abstractDecimals,
+      customEndpoints,
+    });
+  }, [
+    form.values.isDevelopment,
+    form.values.abstractDecimals,
+    form.values.customEndpoints,
+  ]);
 
   const { from, to, exchange } = form.getValues();
 
@@ -558,6 +584,8 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
               </Button>
             </Button.Group>
           </Group>
+
+          <AdvancedOptionsAccordion form={form} isRouter />
 
           {selectedAccountPolkadot ? (
             <Button.Group>

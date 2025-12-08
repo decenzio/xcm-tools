@@ -51,6 +51,10 @@ import {
   parseAsRecipientAddress,
   parseAsSubstrateChain,
 } from '../../utils/routes/parsers';
+import {
+  type AdvancedOptions,
+  AdvancedOptionsAccordion,
+} from '../AdvancedOptionsAccordion/AdvancedOptionsAccordion';
 import { CurrencySelection } from '../common/CurrencySelection';
 import { FeeAssetSelection } from '../common/FeeAssetSelection';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
@@ -79,7 +83,7 @@ export type FormValues = {
   ahAddress: string;
   useApi: boolean;
   useXcmFormatCheck: boolean;
-};
+} & AdvancedOptions;
 
 export type TCurrencyEntryTransformed = TCurrencyEntry & {
   currency?: TAssetInfo;
@@ -95,6 +99,8 @@ type Props = {
   loading: boolean;
   initialValues?: FormValues;
   isVisible?: boolean;
+  advancedOptions?: AdvancedOptions;
+  onAdvancedOptionsChange?: (options: AdvancedOptions) => void;
 };
 
 const TCurrencyEntrySchema = z.object({
@@ -121,6 +127,8 @@ const XcmUtilsForm: FC<Props> = ({
   loading,
   initialValues,
   isVisible = true,
+  advancedOptions,
+  onAdvancedOptionsChange,
 }) => {
   const [queryState, setQueryState] = useQueryStates(
     {
@@ -156,7 +164,9 @@ const XcmUtilsForm: FC<Props> = ({
   );
 
   const form = useForm<FormValues>({
-    initialValues: initialValues ?? queryState,
+    initialValues: initialValues
+      ? { ...initialValues, ...advancedOptions }
+      : { ...queryState, ...advancedOptions },
 
     validate: {
       address: (value) =>
@@ -200,9 +210,46 @@ const XcmUtilsForm: FC<Props> = ({
   });
 
   useAutoFillWalletAddress(form, 'address');
+
   useEffect(() => {
-    void setQueryState(form.values);
+    const {
+      xcmVersion,
+      isDevelopment,
+      abstractDecimals,
+      pallet,
+      method,
+      customEndpoints,
+      ...restValues
+    } = form.values;
+    void setQueryState(restValues);
   }, [form.values, setQueryState]);
+
+  useEffect(() => {
+    const {
+      xcmVersion,
+      isDevelopment,
+      abstractDecimals,
+      pallet,
+      method,
+      customEndpoints,
+    } = form.values;
+    void onAdvancedOptionsChange?.({
+      xcmVersion,
+      isDevelopment,
+      abstractDecimals,
+      pallet,
+      method,
+      customEndpoints,
+    });
+  }, [
+    form.values.xcmVersion,
+    form.values.isDevelopment,
+    form.values.abstractDecimals,
+    form.values.pallet,
+    form.values.method,
+    form.values.customEndpoints,
+  ]);
+
   const { from, to, currencies, useApi } = form.getValues();
 
   const { currencyOptions, currencyMap, isNotParaToPara } = useCurrencyOptions(
@@ -553,6 +600,8 @@ const XcmUtilsForm: FC<Props> = ({
           <XcmApiCheckbox
             {...form.getInputProps('useApi', { type: 'checkbox' })}
           />
+
+          <AdvancedOptionsAccordion form={form} />
 
           {selectedAccount ? (
             <Menu shadow="md" width={250} position="bottom-end">

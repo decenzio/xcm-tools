@@ -38,7 +38,7 @@ import Confetti from 'react-confetti';
 import type { TRouterFormValuesTransformed } from '../../components/XcmRouter/XcmRouterForm';
 import { XcmRouterForm } from '../../components/XcmRouter/XcmRouterForm';
 import { API_URL } from '../../consts';
-import { useWallet } from '../../hooks';
+import { useAdvancedRouterOptionsQuery, useWallet } from '../../hooks';
 import type { TRouterSubmitType } from '../../types';
 import { fetchFromApi, submitTransactionPapi } from '../../utils';
 import {
@@ -46,12 +46,13 @@ import {
   showLoadingNotification,
   showSuccessNotification,
 } from '../../utils/notifications';
+import type { AdvancedRouterOptions } from '../AdvancedOptionsAccordion/AdvancedOptionsAccordion';
 import { ErrorAlert } from '../common/ErrorAlert';
 import { OutputAlert } from '../common/OutputAlert';
 import { VersionBadge } from '../common/VersionBadge';
 import { TransferStepper } from './TransferStepper';
 
-const builderOptions: TRouterBuilderOptions = {
+let builderOptions: TRouterBuilderOptions = {
   abstractDecimals: true,
 };
 
@@ -62,6 +63,9 @@ export const XcmRouter = () => {
 
   const [alertOpened, { open: openAlert, close: closeAlert }] =
     useDisclosure(false);
+
+  const [advancedRouterOptionsQuery, setAdvancedRouterOptionsQuery] =
+    useAdvancedRouterOptionsQuery();
 
   const [
     outputAlertOpened,
@@ -327,12 +331,14 @@ export const XcmRouter = () => {
       currencyTo,
     });
 
+    const { isDevelopment, abstractDecimals, customEndpoints, ...safeFormValues } = formValues;
+
     try {
       let result;
       if (useApi) {
         result = await fetchFromApi(
           {
-            ...formValues,
+            ...safeFormValues,
             currencyFrom: currencyFromInput,
             currencyTo: currencyToInput,
             exchange,
@@ -401,12 +407,14 @@ export const XcmRouter = () => {
       currencyTo,
     });
 
+    const { isDevelopment, abstractDecimals, customEndpoints, ...safeFormValues } = formValues;
+
     try {
       let result;
       if (useApi) {
         result = await fetchFromApi(
           {
-            ...formValues,
+            ...safeFormValues,
             currencyFrom: currencyFromInput,
             currencyTo: currencyToInput,
             exchange,
@@ -482,9 +490,10 @@ export const XcmRouter = () => {
     try {
       let result;
       if (useApi) {
+        const { isDevelopment, abstractDecimals, customEndpoints, ...safeFormValues } = formValues;
         result = await fetchFromApi(
           {
-            ...formValues,
+            ...safeFormValues,
             currencyFrom: currencyFromInput,
             currencyTo: currencyToInput,
             exchange,
@@ -560,9 +569,10 @@ export const XcmRouter = () => {
     try {
       let result;
       if (useApi) {
+        const { isDevelopment, abstractDecimals, customEndpoints, ...safeFormValues } = formValues;
         result = await fetchFromApi(
           {
-            ...formValues,
+            ...safeFormValues,
             currencyFrom: currencyFromInput,
             currencyTo: currencyToInput,
             exchange,
@@ -624,9 +634,10 @@ export const XcmRouter = () => {
     try {
       let result;
       if (useApi) {
+        const { isDevelopment, abstractDecimals, customEndpoints, ...safeFormValues } = formValues;
         result = await fetchFromApi(
           {
-            ...formValues,
+            ...safeFormValues,
             currencyFrom: currencyFromInput,
             currencyTo: currencyToInput,
             options: builderOptions,
@@ -779,6 +790,28 @@ export const XcmRouter = () => {
     setLoading(false);
   };
 
+  const onAdvancedOptionsChange = (options: AdvancedRouterOptions) => {
+    void setAdvancedRouterOptionsQuery(options);
+
+    const apiOverrides =
+      options.customEndpoints && options.customEndpoints.length > 0
+        ? options.customEndpoints.reduce(
+            (acc, ep) => ({
+              ...acc,
+              [ep.chain]: ep.endpoints,
+            }),
+            {},
+          )
+        : undefined;
+
+    builderOptions = {
+      ...builderOptions,
+      abstractDecimals: options.abstractDecimals,
+      development: options.isDevelopment,
+      apiOverrides,
+    };
+  };
+
   const onSubmit = (
     formValues: TRouterFormValuesTransformed,
     submitType: TRouterSubmitType,
@@ -822,7 +855,16 @@ export const XcmRouter = () => {
               parachains using XCM.
             </Text>
           </Box>
-          <XcmRouterForm onSubmit={onSubmit} loading={loading} />
+          <XcmRouterForm
+            onSubmit={onSubmit}
+            loading={loading}
+            advancedOptions={
+              advancedRouterOptionsQuery as AdvancedRouterOptions
+            }
+            onAdvancedOptionsChange={(options) =>
+              onAdvancedOptionsChange(options)
+            }
+          />
         </Stack>
         <Box ref={targetRef}>
           {progressInfo && progressInfo?.type === 'SELECTING_EXCHANGE' && (
