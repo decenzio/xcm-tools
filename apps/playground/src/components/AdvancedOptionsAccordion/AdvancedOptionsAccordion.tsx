@@ -188,10 +188,7 @@ export const AdvancedOptionsAccordion = <
                                   path: string,
                                   item: string,
                                 ) => void
-                              )(
-                                `customEndpoints.${chainIndex}.endpoints`,
-                                '',
-                              )
+                              )(`customEndpoints.${chainIndex}.endpoints`, '')
                             }
                           >
                             Add endpoint
