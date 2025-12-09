@@ -276,6 +276,8 @@ const XcmTransfer = () => {
                 pallet,
                 method,
                 xcmVersion,
+                feeAsset,
+                transformedFeeAsset,
                 isDevelopment,
                 abstractDecimals,
                 ...safeValues
@@ -286,12 +288,15 @@ const XcmTransfer = () => {
               }));
               return {
                 ...safeValues,
+                feeAsset: determineFeeAsset(item, transformedFeeAsset),
+                senderAddress: selectedAccount.address,
                 currency:
                   currencyInputs.length === 1
                     ? currencyInputs[0]
                     : (currencyInputs as TCurrencyCore[]),
               };
             }),
+
             options: {
               mode: batchMode,
               apiOverrides,
@@ -304,7 +309,7 @@ const XcmTransfer = () => {
           },
           api,
           '/x-transfer-batch',
-          selectedAccount.address,
+          selectedAccount.address, // This is probably unnecessary
           apiType,
           'POST',
           true,
@@ -466,6 +471,8 @@ const XcmTransfer = () => {
         useXcmFormatCheck,
         customEndpoints,
         isDevelopment,
+        feeAsset,
+        transformedFeeAsset,
         pallet,
         method,
         xcmVersion,
@@ -663,6 +670,8 @@ const XcmTransfer = () => {
           currencies,
           customEndpoints,
           isDevelopment,
+          feeAsset,
+          transformedFeeAsset,
           pallet,
           method,
           xcmVersion,

@@ -89,7 +89,7 @@ export type TCurrencyEntryTransformed = TCurrencyEntry & {
   currency?: TAssetInfo;
 };
 
-export type FormValuesTransformed = FormValues & {
+export type FormValuesTransformed = Omit<FormValues, 'currencies'> & {
   currencies: TCurrencyEntryTransformed[];
   transformedFeeAsset?: TCurrencyEntryTransformed;
 };
