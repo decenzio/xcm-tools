@@ -12,6 +12,7 @@ import {
 import type { UseFormReturnType } from '@mantine/form';
 import { CHAINS, type TChain, Version } from '@paraspell/sdk';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
@@ -30,12 +31,30 @@ export type AdvancedOptions = {
 
 export type TCustomEndpoint = {
   chain: TChain;
-  endpoints: string[];
+  endpoints: {
+    value: string;
+  }[];
 };
+
+export function validateEndpoint(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'wss:';
+  } catch {
+    return false;
+  }
+}
 
 export const TCustomEndpointSchema = z.object({
   chain: z.string(),
-  endpoints: z.array(z.string()).min(1).default(['']),
+  endpoints: z
+    .array(
+      z.object({
+        value: z.string().refine(validateEndpoint),
+      }),
+    )
+    .min(1)
+    .default([{ value: '' }]),
 });
 
 type Props<T extends AdvancedOptions | AdvancedRouterOptions> = {
@@ -49,9 +68,23 @@ export const AdvancedOptionsAccordion = <
   form,
   isRouter = false,
 }: Props<T>) => {
+  const [opened, setOpened] = useState<string | null>(null);
+
+  useEffect(() => {
+    const hasEndpointError = Object.keys(form.errors).some(
+      (key) => key.startsWith('customEndpoints') && key.endsWith('.value'),
+    );
+
+    if (hasEndpointError) {
+      setOpened('advanced');
+    }
+  }, [form.errors]);
+
   return (
     <Accordion
       variant="filled"
+      value={opened}
+      onChange={setOpened}
       style={{
         width: 'calc(100% + 24px)',
         marginLeft: -12,
@@ -146,7 +179,7 @@ export const AdvancedOptionsAccordion = <
 
                         <Stack gap="xs">
                           {endpointGroup.endpoints.map((_, endpointIndex) => (
-                            <Group key={endpointIndex} align="flex-end">
+                            <Group key={endpointIndex} align="flex-start">
                               <TextInput
                                 label={
                                   endpointIndex === 0 ? 'Endpoints' : undefined
@@ -156,7 +189,7 @@ export const AdvancedOptionsAccordion = <
                                 style={{ flex: 1 }}
                                 required
                                 {...form.getInputProps(
-                                  `customEndpoints.${chainIndex}.endpoints.${endpointIndex}`,
+                                  `customEndpoints.${chainIndex}.endpoints.${endpointIndex}.value`,
                                 )}
                               />
                               <ActionIcon
@@ -171,6 +204,10 @@ export const AdvancedOptionsAccordion = <
                                   )
                                 }
                                 data-testid="button-remove-endpoint"
+                                style={{
+                                  marginTop:
+                                    endpointIndex === 0 ? '28px' : '5px',
+                                }}
                               >
                                 <IconTrash size={16} />
                               </ActionIcon>
@@ -186,9 +223,11 @@ export const AdvancedOptionsAccordion = <
                               (
                                 form.insertListItem as (
                                   path: string,
-                                  item: string,
+                                  item: { value: string },
                                 ) => void
-                              )(`customEndpoints.${chainIndex}.endpoints`, '')
+                              )(`customEndpoints.${chainIndex}.endpoints`, {
+                                value: '',
+                              })
                             }
                           >
                             Add endpoint
@@ -212,7 +251,7 @@ export const AdvancedOptionsAccordion = <
                       ) => void
                     )('customEndpoints', {
                       chain: 'Astar' as TChain,
-                      endpoints: [''],
+                      endpoints: [{ value: '' }],
                     })
                   }
                 >

@@ -67,6 +67,7 @@ import AccountSelectModal from '../AccountSelectModal/AccountSelectModal';
 import {
   AdvancedOptionsAccordion,
   type AdvancedRouterOptions,
+  validateEndpoint,
 } from '../AdvancedOptionsAccordion/AdvancedOptionsAccordion';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { CurrencyInfo } from '../CurrencyInfo';
@@ -179,6 +180,13 @@ export const XcmRouterForm: FC<Props> = ({
       },
       amount: (value) => {
         return Number(value) > 0 ? null : 'Amount must be greater than 0';
+      },
+      customEndpoints: {
+        endpoints: {
+          value: (value) => {
+            return validateEndpoint(value) ? null : 'Endpoint is not valid';
+          },
+        },
       },
     },
     validateInputOnChange: ['exchange'],

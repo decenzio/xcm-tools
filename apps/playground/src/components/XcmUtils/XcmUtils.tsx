@@ -242,7 +242,7 @@ const XcmUtils = () => {
           ? advancedOptionsQuery.customEndpoints.reduce(
               (acc, ep) => ({
                 ...acc,
-                [ep.chain as TChain]: ep.endpoints,
+                [ep.chain as TChain]: ep.endpoints?.map((e) => e.value) ?? [],
               }),
               {} as Partial<Record<TChain, TPjsApiOrUrl>>,
             )
@@ -411,7 +411,7 @@ const XcmUtils = () => {
           ? advancedOptionsQuery.customEndpoints.reduce(
               (acc, ep) => ({
                 ...acc,
-                [ep.chain as TChain]: ep.endpoints,
+                [ep.chain as TChain]: ep.endpoints?.map((e) => e.value) ?? [],
               }),
               {} as Partial<Record<TChain, TPjsApiOrUrl>>,
             )

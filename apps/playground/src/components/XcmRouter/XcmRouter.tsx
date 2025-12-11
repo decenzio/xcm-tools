@@ -70,7 +70,7 @@ export const XcmRouter = () => {
         ? advancedRouterOptionsQuery.customEndpoints.reduce(
             (acc, ep) => ({
               ...acc,
-              [ep.chain]: ep.endpoints,
+              [ep.chain]: ep.endpoints?.map((e) => e.value) ?? [],
             }),
             {},
           )
