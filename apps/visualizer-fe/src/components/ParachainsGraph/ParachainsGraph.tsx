@@ -7,7 +7,12 @@ import type { Group, Object3D } from 'three';
 import { useSelectedParachain } from '../../context/SelectedParachain/useSelectedParachain';
 import type { ChannelsQuery, TotalMessageCountsQuery } from '../../gql/graphql';
 import { CountOption } from '../../gql/graphql';
-import { getChainsByEcosystem, getParachainById, getParachainId } from '../../utils/utils';
+import {
+  getChainsByEcosystem,
+  getParachainById,
+  getParachainEcosystem,
+  getParachainId
+} from '../../utils/utils';
 import LineBetween from '../LineBetween/LineBetween';
 import ParachainNode from '../Parachain/Parachain';
 import Relaychain from '../Relaychain/Relaychain';
@@ -100,7 +105,10 @@ const ParachainsGraph: FC<Props> = ({ channels, totalMessageCounts, ecosystem })
       if (p === ecosystem) {
         ids.add(RELAYCHAIN_ID);
       } else {
-        ids.add(getParachainId(p));
+        const chainEcosystem = getParachainEcosystem(p);
+        if (chainEcosystem === ecosystem) {
+          ids.add(getParachainId(p));
+        }
       }
     });
     return ids;
@@ -133,8 +141,12 @@ const ParachainsGraph: FC<Props> = ({ channels, totalMessageCounts, ecosystem })
   }, [channels, ecosystem]);
 
   const selectedParachainsSet = useMemo(() => {
-    return new Set(selectedParachains);
-  }, [selectedParachains]);
+    const filtered = selectedParachains.filter(p => {
+      if (p === ecosystem) return true;
+      return getParachainEcosystem(p) === ecosystem;
+    });
+    return new Set(filtered);
+  }, [selectedParachains, ecosystem]);
 
   const parachainRefs = useRef<{ [key: string]: Object3D | null }>({});
 
