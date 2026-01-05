@@ -81,7 +81,7 @@ const ParachainsGraph: FC<Props> = ({ channels, totalMessageCounts, ecosystem })
 
   const onRightClick = (chain: TSubstrateChain) => {
     if (ecosystem) {
-      toggleActiveEditParachain(`${ecosystem};${chain}`);
+      toggleActiveEditParachain(chain);
     }
   };
 
@@ -179,7 +179,7 @@ const ParachainsGraph: FC<Props> = ({ channels, totalMessageCounts, ecosystem })
             onClick={handleParachainClick}
             onRightClick={onRightClick}
             isSelected={selectedParachainsSet.has(chain)}
-            scale={parachainScales[chain] ?? 1.5}
+            scale={parachainScales[chain]}
             ecosystem={ecosystem}
             ref={el => {
               parachainRefs.current[`${ecosystem};${chain}`] = el;

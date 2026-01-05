@@ -11,8 +11,8 @@ interface SelectedParachainContextType {
   selectedParachains: TSubstrateChain[];
   setSelectedParachains: (parachains: TSubstrateChain[]) => void;
   toggleParachain: (parachain: TSubstrateChain) => void;
-  activeEditParachain: string | null;
-  toggleActiveEditParachain: (parachainObjectName: string | null) => void;
+  activeEditParachain: TSubstrateChain | null;
+  toggleActiveEditParachain: (parachain: TSubstrateChain | null) => void;
   selectedChannel?: ChannelsQuery['channels'][number];
   setSelectedChannel: (channel: ChannelsQuery['channels'][number] | undefined) => void;
   channelAlertOpen?: boolean;
@@ -59,7 +59,7 @@ const SelectedParachainProvider = ({ children }: SelectedParachainProviderProps)
   const [selectedChannelColor, setSelectedChannelColor] = useState<string>();
   const [parachainArrangement, setParachainArrangement] = useState<CountOption>(CountOption.ORIGIN);
   const [channelAlertOpen, setChannelAlertOpen] = useState<boolean>(false);
-  const [activeEditParachain, setActiveEditParachain] = useState<string | null>(null);
+  const [activeEditParachain, setActiveEditParachain] = useState<TSubstrateChain | null>(null);
   const [skyboxTrigger, setSkyboxTrigger] = useState(0);
   const [animationEnabled, setAnimationEnabled] = useState(true);
 
@@ -71,11 +71,11 @@ const SelectedParachainProvider = ({ children }: SelectedParachainProviderProps)
     }
   };
 
-  const toggleActiveEditParachain = (parachainObjectName: string | null) => {
-    if (activeEditParachain === parachainObjectName) {
+  const toggleActiveEditParachain = (parachain: TSubstrateChain | null) => {
+    if (activeEditParachain === parachain) {
       setActiveEditParachain(null);
     } else {
-      setActiveEditParachain(parachainObjectName);
+      setActiveEditParachain(parachain);
     }
   };
 
