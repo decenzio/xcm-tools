@@ -85,7 +85,7 @@ const ParachainNode: FC<Props> = ({
       }
     }
     setIsEditing(currentlyEditing);
-  }, [activeEditParachain, ecosystem, name, isEditing, initialPosition]);
+  }, [activeEditParachain, ecosystem, name, initialPosition]);
 
   useEffect(() => {
     if (!animationEnabled && groupRef.current) {
