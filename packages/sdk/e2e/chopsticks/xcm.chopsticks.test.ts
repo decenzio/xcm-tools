@@ -39,17 +39,18 @@ export const createChopsticksWorker = async (chain: TSubstrateChain) => {
 }
 
 export const createRequiredChopsticksChains = async (chains: TSubstrateChain[]) => {
-  const chainMap = {} as Record<TSubstrateChain, string>
-  for (const chain of chains) {
-    const instance = chopsticksInstances.find(instance => instance.chain === chain)
-    if (instance) {
-      chainMap[chain] = formatChopsticksAddress(instance.server.addr)
-      continue
-    }
-    const server = await createChopsticksWorker(chain)
-    chainMap[chain] = server
-  }
-  return chainMap
+  return Object.fromEntries(
+    await Promise.all(
+      chains.map(async (chain) => {
+        const instance = chopsticksInstances.find(instance => instance.chain === chain)
+        if (instance) {
+          return [chain, formatChopsticksAddress(instance.server.addr)]
+        }
+        const address = await createChopsticksWorker(chain)
+        return [chain, address]
+      })
+    )
+  ) as Record<TSubstrateChain, string>
 }
 
 
