@@ -160,6 +160,18 @@ importers:
       '@polkadot/util-crypto':
         specifier: ^14.0.1
         version: 14.0.1(@polkadot/util@14.0.1)
+      '@reactive-dot/core':
+        specifier: ^0.68.2
+        version: 0.68.2(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
+      '@reactive-dot/react':
+        specifier: ^0.68.2
+        version: 0.68.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(react@19.2.3)(typescript@5.9.3)(zod@4.2.1)
+      '@reactive-dot/wallet-ledger':
+        specifier: ^0.18.9
+        version: 0.18.9(@ledgerhq/hw-transport@6.32.0)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
+      '@reactive-dot/wallet-mimir':
+        specifier: ^0.2.5
+        version: 0.2.5(@polkadot-api/polkadot-signer@0.1.6)(@polkadot-api/substrate-bindings@0.16.6)(@polkadot-api/utils@0.2.0)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
       '@tabler/icons-react':
         specifier: ^3.36.0
         version: 3.36.0(react@19.2.3)
@@ -3694,6 +3706,21 @@ packages:
   '@laminar/type-definitions@0.3.1':
     resolution: {integrity: sha512-QWC2qtvbPIxal+gMfUocZmwK0UsD7Sb0RUm4Hallkp+OXXL+3uBLwztYDLS5LtocOn0tfR//sgpnfsEIEb71Lw==}
 
+  '@ledgerhq/devices@8.10.0':
+    resolution: {integrity: sha512-ytT66KI8MizFX6dGJKthOzPDw5uNRmmg+RaMta62jbFePKYqfXtYTp6Wc0ErTXaL8nFS3IujHENwKthPmsj6jw==}
+
+  '@ledgerhq/errors@6.29.0':
+    resolution: {integrity: sha512-mmDsGN662zd0XGKyjzSKkg+5o1/l9pvV1HkVHtbzaydvHAtRypghmVoWMY9XAQDLXiUBXGIsLal84NgmGeuKWA==}
+
+  '@ledgerhq/hw-transport-webusb@6.30.0':
+    resolution: {integrity: sha512-GX5OJvNl0cRZyadxQjS+cnAxiD2irw4Cponp46r50WmirXOLR7hJYKfd1plmGlZOAgT6ayggOZkzahunYerPXw==}
+
+  '@ledgerhq/hw-transport@6.32.0':
+    resolution: {integrity: sha512-bf2nxzDQ21DV/bsmExfWI0tatoVeoqhu/ePWalD/nPgPnTn/ZIDq7VBU+TY5p0JZaE87NQwmRUAjm6C1Exe61A==}
+
+  '@ledgerhq/logs@6.14.0':
+    resolution: {integrity: sha512-kJFu1+asWQmU9XlfR1RM3lYR76wuEoPyZvkI/CNjpft78BQr3+MMf3Nu77ABzcKFnhIcmAkOLlDQ6B8L6hDXHA==}
+
   '@lingui/core@5.2.0':
     resolution: {integrity: sha512-cz35uKDxIGb/CPvgwn7BM/QYpxtARmQm7n+mHUoNJdNKSrg9R7vKkLRG7k9dukZwix2Mdjh+2dPIJnAkor2CiA==}
     engines: {node: '>=20.0.0'}
@@ -3863,6 +3890,22 @@ packages:
 
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
+
+  '@mimirdev/apps-inject@3.2.0':
+    resolution: {integrity: sha512-yKWFaZsUgxaPIU/xM8OFvWRsNld6x8iCeqbQbt/LyUsikLGlkrHOZl29MwMfSQiYAWrYNqwhFpCU07sS2DTOLQ==}
+
+  '@mimirdev/apps-sdk@3.1.0':
+    resolution: {integrity: sha512-EevWZhaaP9gKcIJeEbokAugx5X0sd8jRae1CX1Uzg5KsVxODjeLLaAE1D90Lj6//JE1NPaEq3QKi9PliSMLVNg==}
+
+  '@mimirdev/apps-transports@3.1.0':
+    resolution: {integrity: sha512-8t/lPZMh/bBxQx4urWsILKjBO9FHRIPzXb72znQkwXRCK7H6WEXFhTCoqJthztf3ihEfqmkdQUKEKRKt5pdNtw==}
+
+  '@mimirdev/papi-signer@3.1.0':
+    resolution: {integrity: sha512-nqWemLZpG43fxQzpnvN3lLYxV3ffosstSfxkPuvW/8XIJrDCjcjRad3URhWTy536jKMFfoClaqlmO1uH/ym0aA==}
+    peerDependencies:
+      '@polkadot-api/polkadot-signer': '*'
+      '@polkadot-api/substrate-bindings': '*'
+      '@polkadot-api/utils': '*'
 
   '@monogrid/gainmap-js@3.1.0':
     resolution: {integrity: sha512-Obb0/gEd/HReTlg8ttaYk+0m62gQJmCblMOjHSMHRrBP2zdfKMHLCRbh/6ex9fSUJMKdjjIEiohwkbGD3wj2Nw==}
@@ -4517,6 +4560,11 @@ packages:
   '@polkadot-api/known-chains@0.9.16':
     resolution: {integrity: sha512-fzNCrcjy8SjH5UvhJmRyyNErr3yPVO3Ka4kP+ueBuc2uG956HQ411k81hhgbie2Vmo1mTYPF/8ZNEIESpanMuA==}
 
+  '@polkadot-api/ledger-signer@0.2.14':
+    resolution: {integrity: sha512-2C1R+nQeW0Cdo0v/Svdi44X3Pt2PZEHLX29BXvOcM3rx4cKJ1zNK6Gcodf2z3hZ203uabU2Vl0JSCdm1xzjGRA==}
+    peerDependencies:
+      '@ledgerhq/hw-transport': '6'
+
   '@polkadot-api/legacy-provider@0.3.6':
     resolution: {integrity: sha512-JZQg0HVtBowFKxNrZdnMBKXmeSBD4yFlz6egEpvE97RXRvjaBzTaVuFFhBchngq9YmgFQewuWSoX5XSUW6hcEg==}
     peerDependencies:
@@ -4528,11 +4576,17 @@ packages:
   '@polkadot-api/merkleize-metadata@1.1.27':
     resolution: {integrity: sha512-OdKwOzzrLL0Ju3pQA9LjeQEquMcD+KtLybUAO3fVxwjxD5cyI0RwillGoAIBJvfMaZpNxnxJnD+WzNjRcr7FiQ==}
 
+  '@polkadot-api/merkleize-metadata@1.1.28':
+    resolution: {integrity: sha512-rWJn9EUV6xPLvUbHJvydKjBS8h0YRutcw7w4XxO9pMCpJYu5CcZThKq5OD1qqLsUs6zz0LWrUIgErRE/BCdPfg==}
+
   '@polkadot-api/metadata-builders@0.0.1-492c132563ea6b40ae1fc5470dec4cd18768d182.1.0':
     resolution: {integrity: sha512-BD7rruxChL1VXt0icC2gD45OtT9ofJlql0qIllHSRYgama1CR2Owt+ApInQxB+lWqM+xNOznZRpj8CXNDvKIMg==}
 
   '@polkadot-api/metadata-builders@0.13.7':
     resolution: {integrity: sha512-xwggY8F/gtX7qGzz+jzP3DZvWgBWIIFQhk+r2MJ431CR+tNKeTtzGdwNocVrb9NYTK2naC9ckJS14nrNM6LWLw==}
+
+  '@polkadot-api/metadata-builders@0.13.8':
+    resolution: {integrity: sha512-nQNf7QXaTsmX+sPMhiKcerWzuuQE1UqoDpnq/AV7kRYVu/IX/S7AMeA/qTcJWi64MRIHZsmhv/muuIi6eOlxGw==}
 
   '@polkadot-api/metadata-builders@0.3.2':
     resolution: {integrity: sha512-TKpfoT6vTb+513KDzMBTfCb/ORdgRnsS3TDFpOhAhZ08ikvK+hjHMt5plPiAX/OWkm1Wc9I3+K6W0hX5Ab7MVg==}
@@ -4569,6 +4623,9 @@ packages:
   '@polkadot-api/signers-common@0.1.18':
     resolution: {integrity: sha512-UQXuRZoQ+jMolEpIPF0mVXcoqQ/382fHrSOgfK5sIvjeH0HPf4P+s3IwcnwyAdpHY2gdHXYlHd/SAw7Q1gJ4EA==}
 
+  '@polkadot-api/signers-common@0.1.19':
+    resolution: {integrity: sha512-Rb6NvANmq/M44yeGGf7B/2FjMRnSjnXVqepcsb1VA4mdcc01B5lZSvIl3nBT8k1J/TEgvYNn0DFm+aBLfmb9gA==}
+
   '@polkadot-api/sm-provider@0.1.15':
     resolution: {integrity: sha512-ajlnfDn84Tniy4o7dnBKR7Pe5I33snjVm4yDMtEAPeAJM9ZZimfWIAxqPnEpHWMKVkERXjqyHqxb9Lk+halSlg==}
     peerDependencies:
@@ -4582,6 +4639,9 @@ packages:
 
   '@polkadot-api/substrate-bindings@0.16.5':
     resolution: {integrity: sha512-QFgNlBmtLtiUGTCTurxcE6UZrbI2DaQ5/gyIiC2FYfEhStL8tl20b09FRYHcSjY+lxN42Rcf9HVX+MCFWLYlpQ==}
+
+  '@polkadot-api/substrate-bindings@0.16.6':
+    resolution: {integrity: sha512-cATY7HWU5hWd09C1MUEddechq7JT7QAciKL2/N/1wv5rxGcAFyAD9ZtaKBXVI4Aui9RSeGh8KvHdgKFLoozMyQ==}
 
   '@polkadot-api/substrate-bindings@0.6.0':
     resolution: {integrity: sha512-lGuhE74NA1/PqdN7fKFdE5C1gNYX357j1tWzdlPXI0kQ7h3kN0zfxNOpPUN7dIrPcOFZ6C0tRRVrBylXkI6xPw==}
@@ -5406,6 +5466,25 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
 
+  '@reactive-dot/core@0.68.2':
+    resolution: {integrity: sha512-/8pOcXarYfJM/l8f+9RF4U+kQQdvrLeB9scHYqMKfr7m+A6rsiIjWXAkUO7u8313tFAYlbgDwPt0x4BPOfH2ZQ==}
+    peerDependencies:
+      polkadot-api: '>=1.23.2'
+
+  '@reactive-dot/react@0.68.2':
+    resolution: {integrity: sha512-AF7oo7XjMItmX7fbsgpdJE7HVjWuwql3M1eN7HfQqK9/frCe04QSXNxUuUhFkhMJ+RFuPoN/YXelOzIJLWI/Jg==}
+    peerDependencies:
+      react: '>= 19.2.x'
+
+  '@reactive-dot/utils@0.10.3':
+    resolution: {integrity: sha512-mQxAwSXlkO43MJeHDWwm5/1uCkZvMDpQ3LeXf0U7jdN2qj9djX4bfvxeh97biGMhpcoOAHooNnNMOMkheJ5Fjw==}
+
+  '@reactive-dot/wallet-ledger@0.18.9':
+    resolution: {integrity: sha512-SuKEX8vN/He5KL382+WzQVMQ2Ovxh6r+Mr1RutPvMkWrq/o8/D/d2kNbzanDa+eOSA18ojTdHy9K+QTbXIDptw==}
+
+  '@reactive-dot/wallet-mimir@0.2.5':
+    resolution: {integrity: sha512-8fUxovZYYwTAtUVPYjILNx49iiJThxz75ZgwG9Grdw7e7B1BaGLPzuLLiYRfx5M1SoLZMKeiEsAyYQiyZK8GwQ==}
+
   '@repeaterjs/repeater@3.0.6':
     resolution: {integrity: sha512-Javneu5lsuhwNCryN+pXH93VPQ8g0dBX7wItHFgYiwQmzE1sVdg5tWHiOgHywzL2W21XQopa7IwIEnNbmeUJYA==}
 
@@ -6072,6 +6151,9 @@ packages:
     resolution: {integrity: sha512-zwaxuNEVI9bGt0rT8PEJiXOyebLIo6QN1SyiAHRPBOl6g3Sy0KKdSN8Jmyn++oXhVRD8aIe75/V8ZkS81T+BPQ==}
     deprecated: versions below 1.x are no longer maintained
 
+  '@substrate/discovery@0.2.2':
+    resolution: {integrity: sha512-vD5B1LqIaiDBWpJ7h1b89jzhU0AKjOySFAt2zbTDz+gpRdcOn0I8PoxhOrent4LXFX9O/ch8bGG/JYDtr2B2QA==}
+
   '@substrate/light-client-extension-helpers@0.0.4':
     resolution: {integrity: sha512-vfKcigzL0SpiK+u9sX6dq2lQSDtuFLOxIJx2CKPouPEHIs8C+fpsufn52r19GQn+qDhU8POMPHOVoqLktj8UEA==}
     peerDependencies:
@@ -6081,6 +6163,9 @@ packages:
     resolution: {integrity: sha512-TdKlni1mBBZptOaeVrKnusMg/UBpWUORNDv5fdCaJklP4RJiFOzBCrzC+CyVI5kQzsXBisZ+2pXm+rIjS38kHg==}
     peerDependencies:
       smoldot: 2.x
+
+  '@substrate/smoldot-discovery@2.0.2':
+    resolution: {integrity: sha512-6KG6S1QkEfDJIgqYszSWH7n6QBGdcU9LG6sWdEUR86wqrr26Pr1z52cOUhHBRtU2+vydglIM6IVnMuzFEIUbBw==}
 
   '@substrate/smoldot-light@0.7.9':
     resolution: {integrity: sha512-HP8iP7sFYlpSgjjbo0lqHyU+gu9lL2hbDNce6dWk5/10mFFF9jKIFGfui4zCecUY808o/Go9pan/31kMJoLbug==}
@@ -9233,6 +9318,41 @@ packages:
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
 
+  jotai-eager@0.2.4:
+    resolution: {integrity: sha512-Le2cY39phggOXloGbcxSOw+Bq+sfTxzP5S0IHj5OPPYYk/x6IiBOIB/PhfhYcK6WGT3FdoTwum5VZOuFvqc40g==}
+    peerDependencies:
+      jotai: '>=2.0.0'
+
+  jotai-effect@2.2.3:
+    resolution: {integrity: sha512-MKw5eUydU6aL+fGtrMbdWLB+KFHc4R1AfQcCnXYpvc2AN+tiE/qS0yZwuL2HEBQoEm6quGPb5M1Uib6viK2Eeg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      jotai: '>=2.16.0'
+
+  jotai-suspense@0.4.2:
+    resolution: {integrity: sha512-w1eDb8ebW07L2EINIM4adI4eXAMlr5NMEuXdn7IPzW0v3YT9RTqv/vUQ5Nv4Fp1L3QdjKH1R+pxOCiRJqIh1kQ==}
+    peerDependencies:
+      jotai: '>=2.12.2'
+      react: '>=18.0.0'
+
+  jotai@2.16.2:
+    resolution: {integrity: sha512-DH0lBiTXvewsxtqqwjDW6Hg9JPTDnq9LcOsXSFWCAUEt+qj5ohl9iRVX9zQXPPHKLXCdH+5mGvM28fsXMl17/g==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@babel/core': '>=7.0.0'
+      '@babel/template': '>=7.0.0'
+      '@types/react': '>=17.0.0'
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      '@babel/template':
+        optional: true
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -9991,6 +10111,14 @@ packages:
 
   ox@0.11.1:
     resolution: {integrity: sha512-1l1gOLAqg0S0xiN1dH5nkPna8PucrZgrIJOfS49MLNiMevxu07Iz4ZjuJS9N+xifvT+PsZyIptS7WHM8nC+0+A==}
+    peerDependencies:
+      typescript: '>=5.4.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  ox@0.11.3:
+    resolution: {integrity: sha512-1bWYGk/xZel3xro3l8WGg6eq4YEKlaqvyMtVhfMFpbJzK2F6rj4EDRtqDCWVEJMkzcmEi9uW2QxsqELokOlarw==}
     peerDependencies:
       typescript: '>=5.4.0'
     peerDependenciesMeta:
@@ -11270,6 +11398,7 @@ packages:
   tar@6.2.1:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   terser-webpack-plugin@5.3.14:
     resolution: {integrity: sha512-vkZjpUjb6OMS7dhV+tILUW6BhpDR7P2L/aQSAv+Uwk+m8KATX9EccViHTJR2qDtACKPIYndLGCyl3FMo+r2LMw==}
@@ -15970,6 +16099,31 @@ snapshots:
     dependencies:
       '@open-web3/orml-type-definitions': 0.8.2-11
 
+  '@ledgerhq/devices@8.10.0':
+    dependencies:
+      '@ledgerhq/errors': 6.29.0
+      '@ledgerhq/logs': 6.14.0
+      rxjs: 7.8.2
+      semver: 7.7.3
+
+  '@ledgerhq/errors@6.29.0': {}
+
+  '@ledgerhq/hw-transport-webusb@6.30.0':
+    dependencies:
+      '@ledgerhq/devices': 8.10.0
+      '@ledgerhq/errors': 6.29.0
+      '@ledgerhq/hw-transport': 6.32.0
+      '@ledgerhq/logs': 6.14.0
+
+  '@ledgerhq/hw-transport@6.32.0':
+    dependencies:
+      '@ledgerhq/devices': 8.10.0
+      '@ledgerhq/errors': 6.29.0
+      '@ledgerhq/logs': 6.14.0
+      events: 3.3.0
+
+  '@ledgerhq/logs@6.14.0': {}
+
   '@lingui/core@5.2.0':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -16164,6 +16318,24 @@ snapshots:
       resolve: 1.22.10
 
   '@microsoft/tsdoc@0.16.0': {}
+
+  '@mimirdev/apps-inject@3.2.0':
+    dependencies:
+      '@mimirdev/apps-sdk': 3.1.0
+
+  '@mimirdev/apps-sdk@3.1.0':
+    dependencies:
+      eventemitter3: 5.0.1
+
+  '@mimirdev/apps-transports@3.1.0': {}
+
+  '@mimirdev/papi-signer@3.1.0(@polkadot-api/polkadot-signer@0.1.6)(@polkadot-api/substrate-bindings@0.16.6)(@polkadot-api/utils@0.2.0)':
+    dependencies:
+      '@mimirdev/apps-sdk': 3.1.0
+      '@mimirdev/apps-transports': 3.1.0
+      '@polkadot-api/polkadot-signer': 0.1.6
+      '@polkadot-api/substrate-bindings': 0.16.6
+      '@polkadot-api/utils': 0.2.0
 
   '@monogrid/gainmap-js@3.1.0(three@0.182.0)':
     dependencies:
@@ -16924,6 +17096,15 @@ snapshots:
 
   '@polkadot-api/known-chains@0.9.16': {}
 
+  '@polkadot-api/ledger-signer@0.2.14(@ledgerhq/hw-transport@6.32.0)':
+    dependencies:
+      '@ledgerhq/hw-transport': 6.32.0
+      '@polkadot-api/merkleize-metadata': 1.1.28
+      '@polkadot-api/polkadot-signer': 0.1.6
+      '@polkadot-api/signers-common': 0.1.19
+      '@polkadot-api/substrate-bindings': 0.16.6
+      '@polkadot-api/utils': 0.2.0
+
   '@polkadot-api/legacy-provider@0.3.6(rxjs@7.8.2)':
     dependencies:
       '@polkadot-api/json-rpc-provider': 0.0.4
@@ -16942,6 +17123,12 @@ snapshots:
       '@polkadot-api/substrate-bindings': 0.16.5
       '@polkadot-api/utils': 0.2.0
 
+  '@polkadot-api/merkleize-metadata@1.1.28':
+    dependencies:
+      '@polkadot-api/metadata-builders': 0.13.8
+      '@polkadot-api/substrate-bindings': 0.16.6
+      '@polkadot-api/utils': 0.2.0
+
   '@polkadot-api/metadata-builders@0.0.1-492c132563ea6b40ae1fc5470dec4cd18768d182.1.0':
     dependencies:
       '@polkadot-api/substrate-bindings': 0.0.1-492c132563ea6b40ae1fc5470dec4cd18768d182.1.0
@@ -16951,6 +17138,11 @@ snapshots:
   '@polkadot-api/metadata-builders@0.13.7':
     dependencies:
       '@polkadot-api/substrate-bindings': 0.16.5
+      '@polkadot-api/utils': 0.2.0
+
+  '@polkadot-api/metadata-builders@0.13.8':
+    dependencies:
+      '@polkadot-api/substrate-bindings': 0.16.6
       '@polkadot-api/utils': 0.2.0
 
   '@polkadot-api/metadata-builders@0.3.2':
@@ -17015,6 +17207,13 @@ snapshots:
       '@polkadot-api/substrate-bindings': 0.16.5
       '@polkadot-api/utils': 0.2.0
 
+  '@polkadot-api/signers-common@0.1.19':
+    dependencies:
+      '@polkadot-api/metadata-builders': 0.13.8
+      '@polkadot-api/polkadot-signer': 0.1.6
+      '@polkadot-api/substrate-bindings': 0.16.6
+      '@polkadot-api/utils': 0.2.0
+
   '@polkadot-api/sm-provider@0.1.15(@polkadot-api/smoldot@0.3.15(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@polkadot-api/json-rpc-provider': 0.0.4
@@ -17038,6 +17237,13 @@ snapshots:
     optional: true
 
   '@polkadot-api/substrate-bindings@0.16.5':
+    dependencies:
+      '@noble/hashes': 2.0.1
+      '@polkadot-api/utils': 0.2.0
+      '@scure/base': 2.0.0
+      scale-ts: 1.6.1
+
+  '@polkadot-api/substrate-bindings@0.16.6':
     dependencies:
       '@noble/hashes': 2.0.1
       '@polkadot-api/utils': 0.2.0
@@ -18749,6 +18955,60 @@ snapshots:
     dependencies:
       react: 19.2.3
 
+  '@reactive-dot/core@0.68.2(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)':
+    dependencies:
+      '@noble/hashes': 2.0.1
+      '@reactive-dot/utils': 0.10.3
+      '@substrate/smoldot-discovery': 2.0.2
+      ox: 0.11.3(typescript@5.9.3)(zod@4.2.1)
+      polkadot-api: 1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0)
+    transitivePeerDependencies:
+      - typescript
+      - zod
+
+  '@reactive-dot/react@0.68.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(react@19.2.3)(typescript@5.9.3)(zod@4.2.1)':
+    dependencies:
+      '@reactive-dot/core': 0.68.2(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
+      jotai: 2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)
+      jotai-eager: 0.2.4(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3))
+      jotai-effect: 2.2.3(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3))
+      jotai-suspense: 0.4.2(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@babel/template'
+      - '@types/react'
+      - polkadot-api
+      - typescript
+      - zod
+
+  '@reactive-dot/utils@0.10.3': {}
+
+  '@reactive-dot/wallet-ledger@0.18.9(@ledgerhq/hw-transport@6.32.0)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)':
+    dependencies:
+      '@ledgerhq/hw-transport-webusb': 6.30.0
+      '@polkadot-api/ledger-signer': 0.2.14(@ledgerhq/hw-transport@6.32.0)
+      '@reactive-dot/core': 0.68.2(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - '@ledgerhq/hw-transport'
+      - polkadot-api
+      - typescript
+      - zod
+
+  '@reactive-dot/wallet-mimir@0.2.5(@polkadot-api/polkadot-signer@0.1.6)(@polkadot-api/substrate-bindings@0.16.6)(@polkadot-api/utils@0.2.0)(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)':
+    dependencies:
+      '@mimirdev/apps-inject': 3.2.0
+      '@mimirdev/papi-signer': 3.1.0(@polkadot-api/polkadot-signer@0.1.6)(@polkadot-api/substrate-bindings@0.16.6)(@polkadot-api/utils@0.2.0)
+      '@reactive-dot/core': 0.68.2(polkadot-api@1.23.1(@swc/core@1.15.8(@swc/helpers@0.5.17))(bufferutil@4.0.9)(jiti@2.4.2)(postcss@8.5.6)(rxjs@7.8.2)(utf-8-validate@5.0.10)(yaml@2.8.0))(typescript@5.9.3)(zod@4.2.1)
+    transitivePeerDependencies:
+      - '@polkadot-api/polkadot-signer'
+      - '@polkadot-api/substrate-bindings'
+      - '@polkadot-api/utils'
+      - polkadot-api
+      - typescript
+      - zod
+
   '@repeaterjs/repeater@3.0.6': {}
 
   '@rolldown/pluginutils@1.0.0-beta.53': {}
@@ -19511,6 +19771,8 @@ snapshots:
       - utf-8-validate
     optional: true
 
+  '@substrate/discovery@0.2.2': {}
+
   '@substrate/light-client-extension-helpers@0.0.4(smoldot@2.0.22(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@polkadot-api/client': 0.0.1-492c132563ea6b40ae1fc5470dec4cd18768d182.1.0(rxjs@7.8.2)
@@ -19534,6 +19796,10 @@ snapshots:
       rxjs: 7.8.2
       smoldot: 2.0.26(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optional: true
+
+  '@substrate/smoldot-discovery@2.0.2':
+    dependencies:
+      '@substrate/discovery': 0.2.2
 
   '@substrate/smoldot-light@0.7.9(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
@@ -23366,6 +23632,26 @@ snapshots:
 
   jju@1.4.0: {}
 
+  jotai-eager@0.2.4(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)):
+    dependencies:
+      jotai: 2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)
+
+  jotai-effect@2.2.3(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)):
+    dependencies:
+      jotai: 2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)
+
+  jotai-suspense@0.4.2(jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3):
+    dependencies:
+      jotai: 2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3)
+      react: 19.2.3
+
+  jotai@2.16.2(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.3):
+    optionalDependencies:
+      '@babel/core': 7.28.5
+      '@babel/template': 7.27.2
+      '@types/react': 19.2.7
+      react: 19.2.3
+
   joycon@3.1.1: {}
 
   js-sha256@0.10.1: {}
@@ -24176,6 +24462,21 @@ snapshots:
       safe-push-apply: 1.0.0
 
   ox@0.11.1(typescript@5.9.3)(zod@4.2.1):
+    dependencies:
+      '@adraffy/ens-normalize': 1.11.0
+      '@noble/ciphers': 1.3.0
+      '@noble/curves': 1.9.1
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.2.3(typescript@5.9.3)(zod@4.2.1)
+      eventemitter3: 5.0.1
+    optionalDependencies:
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - zod
+
+  ox@0.11.3(typescript@5.9.3)(zod@4.2.1):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       '@noble/ciphers': 1.3.0
