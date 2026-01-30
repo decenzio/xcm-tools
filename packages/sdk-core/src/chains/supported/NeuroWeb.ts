@@ -7,9 +7,9 @@ import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
 import type { TTransferLocalOptions } from '../../types'
 import { type IPolkadotXCMTransfer, type TPolkadotXCMTransferOptions } from '../../types'
 import { assertHasId } from '../../utils'
-import Parachain from '../Parachain'
+import Chain from '../Chain'
 
-class NeuroWeb<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTransfer {
+class NeuroWeb<TApi, TRes> extends Chain<TApi, TRes> implements IPolkadotXCMTransfer {
   constructor(
     chain: TParachain = 'NeuroWeb',
     info: string = 'neuroweb',
@@ -20,7 +20,7 @@ class NeuroWeb<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCM
   }
 
   transferPolkadotXCM<TApi, TRes>(input: TPolkadotXCMTransferOptions<TApi, TRes>): Promise<TRes> {
-    return transferPolkadotXcm(input, 'limited_reserve_transfer_assets', 'Unlimited')
+    return transferPolkadotXcm(input)
   }
 
   transferLocalNativeAsset(options: TTransferLocalOptions<TApi, TRes>): Promise<TRes> {

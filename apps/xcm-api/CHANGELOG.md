@@ -1,5 +1,36 @@
 # Changelog
 
+## [12.5.0](https://github.com/paraspell/xcm-tools/compare/xcm-api-v12.4.0...xcm-api-v12.5.0) (2026-01-30)
+
+
+### Build System
+
+* **xcm-api,visualizer-be:** Update to Prisma v7 📦 ([ea6f23c](https://github.com/paraspell/xcm-tools/commit/ea6f23ca4eb5935d9ad930d01cd467d6bee21866))
+
+## [12.4.0](https://github.com/paraspell/xcm-tools/compare/xcm-api-v12.3.0...xcm-api-v12.4.0) (2026-01-22)
+
+
+### Features
+
+* **visualizer-be:** Migrate to prisma ([d18d9e3](https://github.com/paraspell/xcm-tools/commit/d18d9e3ea45635c3282012ec58ae4d6dd977a085))
+
+
+### Bug Fixes
+
+* Update LICENSES and Sponsor logos ([2e3a881](https://github.com/paraspell/xcm-tools/commit/2e3a881a3d843101bdaf93db945e0a2bb48a7cf3))
+
+
+### Documentation
+
+* Update readmes to be up to date ([864f206](https://github.com/paraspell/xcm-tools/commit/864f206106c545fbbd68d292139ab3224e474bb2))
+
+## [12.3.0](https://github.com/paraspell/xcm-tools/compare/xcm-api-v12.2.2...xcm-api-v12.3.0) (2026-01-19)
+
+
+### Features
+
+* Add support for Westend, Paseo snowbridge ↔ ([d3954d5](https://github.com/paraspell/xcm-tools/commit/d3954d539a1f5348c140e5e31d955d5e66dad055))
+
 ## [12.2.2](https://github.com/paraspell/xcm-tools/compare/xcm-api-v12.2.1...xcm-api-v12.2.2) (2026-01-13)
 
 

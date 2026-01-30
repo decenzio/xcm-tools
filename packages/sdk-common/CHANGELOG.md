@@ -1,5 +1,27 @@
 # Changelog
 
+## [12.5.0](https://github.com/paraspell/xcm-tools/compare/sdk-common-v12.4.0...sdk-common-v12.5.0) (2026-01-30)
+
+
+### Miscellaneous Chores
+
+* **sdk-common:** Synchronize main versions
+
+## [12.4.0](https://github.com/paraspell/xcm-tools/compare/sdk-common-v12.3.0...sdk-common-v12.4.0) (2026-01-22)
+
+
+### Bug Fixes
+
+* Add logos that change based on mode ☀️🌑 ([fb3dedf](https://github.com/paraspell/xcm-tools/commit/fb3dedf4683453942c8d07e0744e15d78e71cdc0))
+* Update LICENSES and Sponsor logos ([2e3a881](https://github.com/paraspell/xcm-tools/commit/2e3a881a3d843101bdaf93db945e0a2bb48a7cf3))
+
+## [12.3.0](https://github.com/paraspell/xcm-tools/compare/sdk-common-v12.2.2...sdk-common-v12.3.0) (2026-01-19)
+
+
+### Features
+
+* Add support for Westend, Paseo snowbridge ↔ ([d3954d5](https://github.com/paraspell/xcm-tools/commit/d3954d539a1f5348c140e5e31d955d5e66dad055))
+
 ## [12.2.2](https://github.com/paraspell/xcm-tools/compare/sdk-common-v12.2.1...sdk-common-v12.2.2) (2026-01-13)
 
 

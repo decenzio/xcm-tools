@@ -12,7 +12,12 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import type { TAssetInfo, TChain, TSubstrateChain } from '@paraspell/sdk';
-import { CHAINS, isChainEvm, SUBSTRATE_CHAINS } from '@paraspell/sdk';
+import {
+  CHAINS,
+  isChainEvm,
+  isExternalChain,
+  SUBSTRATE_CHAINS,
+} from '@paraspell/sdk';
 import {
   IconChevronDown,
   IconLocationCheck,
@@ -34,7 +39,6 @@ import { z } from 'zod';
 
 import { DEFAULT_ADDRESS, MAIN_FORM_NAME } from '../../constants';
 import {
-  useAutoFillWalletAddress,
   useCurrencyOptions,
   useFeeCurrencyOptions,
   useWallet,
@@ -125,6 +129,14 @@ const XcmTransferForm: FC<Props> = ({
   initialValues,
   isVisible = true,
 }) => {
+  const {
+    connectWallet,
+    selectedAccount,
+    isInitialized,
+    isLoadingExtensions,
+    setIsUseXcmApiSelected,
+  } = useWallet();
+
   const [queryState, setQueryState] = useQueryStates({
     from: parseAsSubstrateChain.withDefault('Astar'),
     to: parseAsChain.withDefault('Hydration'),
@@ -148,7 +160,9 @@ const XcmTransferForm: FC<Props> = ({
       customCurrencyType: 'symbol',
       customCurrencySymbolSpecifier: 'auto',
     }),
-    address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+    address: parseAsRecipientAddress.withDefault(
+      selectedAccount?.address ?? DEFAULT_ADDRESS,
+    ),
     ahAddress: parseAsString.withDefault(''),
     useApi: parseAsBoolean.withDefault(false),
     ...advancedOptionsParsers,
@@ -200,8 +214,6 @@ const XcmTransferForm: FC<Props> = ({
       apiOverrides: { endpoints: { url: validateCustomEndpoint } },
     },
   });
-
-  useAutoFillWalletAddress(form, 'address');
 
   useEffect(() => {
     void setQueryState(form.values);
@@ -328,19 +340,11 @@ const XcmTransferForm: FC<Props> = ({
 
   const onSwap = () => {
     const { from, to } = form.getValues();
-    if (to !== 'Ethereum') {
+    if (!isExternalChain(to)) {
       form.setFieldValue('from', to);
       form.setFieldValue('to', from);
     }
   };
-
-  const {
-    connectWallet,
-    selectedAccount,
-    isInitialized,
-    isLoadingExtensions,
-    setIsUseXcmApiSelected,
-  } = useWallet();
 
   useEffect(() => {
     setIsUseXcmApiSelected(useApi);

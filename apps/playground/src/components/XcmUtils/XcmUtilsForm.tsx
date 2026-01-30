@@ -12,7 +12,12 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import type { TAssetInfo, TChain, TSubstrateChain } from '@paraspell/sdk';
-import { CHAINS, isChainEvm, SUBSTRATE_CHAINS } from '@paraspell/sdk';
+import {
+  CHAINS,
+  isChainEvm,
+  isExternalChain,
+  SUBSTRATE_CHAINS,
+} from '@paraspell/sdk';
 import {
   IconArrowBarDown,
   IconArrowBarToRight,
@@ -38,7 +43,6 @@ import z from 'zod';
 
 import { DEFAULT_ADDRESS, MAIN_FORM_NAME } from '../../constants';
 import {
-  useAutoFillWalletAddress,
   useCurrencyOptions,
   useFeeCurrencyOptions,
   useWallet,
@@ -127,6 +131,14 @@ const XcmUtilsForm: FC<Props> = ({
   initialValues,
   isVisible = true,
 }) => {
+  const {
+    connectWallet,
+    selectedAccount,
+    isInitialized,
+    isLoadingExtensions,
+    setIsUseXcmApiSelected,
+  } = useWallet();
+
   const [queryState, setQueryState] = useQueryStates(
     {
       from: parseAsSubstrateChain.withDefault('Astar'),
@@ -152,7 +164,9 @@ const XcmUtilsForm: FC<Props> = ({
         customCurrencySymbolSpecifier: 'auto',
       }),
 
-      address: parseAsRecipientAddress.withDefault(DEFAULT_ADDRESS),
+      address: parseAsRecipientAddress.withDefault(
+        selectedAccount?.address ?? DEFAULT_ADDRESS,
+      ),
       ahAddress: parseAsString.withDefault(''),
       useApi: parseAsBoolean.withDefault(false),
       ...advancedOptionsParsers,
@@ -204,8 +218,6 @@ const XcmUtilsForm: FC<Props> = ({
       apiOverrides: { endpoints: { url: validateCustomEndpoint } },
     },
   });
-
-  useAutoFillWalletAddress(form, 'address');
 
   useEffect(() => {
     void setQueryState(form.values);
@@ -375,19 +387,11 @@ const XcmUtilsForm: FC<Props> = ({
 
   const onSwap = () => {
     const { from: currentFrom, to: currentTo } = form.getValues();
-    if (currentTo !== 'Ethereum') {
+    if (!isExternalChain(currentTo)) {
       form.setFieldValue('from', currentTo);
       form.setFieldValue('to', currentFrom);
     }
   };
-
-  const {
-    connectWallet,
-    selectedAccount,
-    isInitialized,
-    isLoadingExtensions,
-    setIsUseXcmApiSelected,
-  } = useWallet();
 
   const onConnectWalletClick = () => void connectWallet();
 

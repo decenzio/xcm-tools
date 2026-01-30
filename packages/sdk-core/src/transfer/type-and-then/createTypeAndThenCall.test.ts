@@ -1,13 +1,15 @@
-import type { TAsset, TAssetInfo } from '@paraspell/assets'
+import type { TAsset, TAssetInfo, TAssetWithFee } from '@paraspell/assets'
 import { findNativeAssetInfoOrThrow } from '@paraspell/assets'
 import type { TSubstrateChain } from '@paraspell/sdk-common'
 import { Version } from '@paraspell/sdk-common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IPolkadotApi } from '../../api'
-import { RELAY_LOCATION } from '../../constants'
+import { DOT_LOCATION, RELAY_LOCATION } from '../../constants'
+import { BridgeHaltedError } from '../../errors'
 import type { TSerializedExtrinsics, TTypeAndThenCallContext, TTypeAndThenFees } from '../../types'
 import { createAsset, getRelayChainOf, localizeLocation, parseUnits, sortAssets } from '../../utils'
+import { getBridgeStatus } from '../getBridgeStatus'
 import { buildTypeAndThenCall } from './buildTypeAndThenCall'
 import { computeAllFees } from './computeFees'
 import { createTypeAndThenCallContext } from './createContext'
@@ -23,6 +25,7 @@ vi.mock('./utils')
 vi.mock('./computeFees')
 vi.mock('./buildTypeAndThenCall')
 vi.mock('../../utils')
+vi.mock('../getBridgeStatus')
 
 describe('createTypeAndThenCall', () => {
   const mockApi = {} as IPolkadotApi<unknown, unknown>
@@ -33,7 +36,7 @@ describe('createTypeAndThenCall', () => {
     method: 'mockMethod',
     params: {}
   }
-  const mockCustomXcm: ReturnType<typeof createCustomXcm> = []
+  const mockCustomXcm: Awaited<ReturnType<typeof createCustomXcm>> = []
   const mockRefundInstruction = { SetAppendix: [] } as ReturnType<typeof createRefundInstruction>
   const mockAsset: TAsset = { id: RELAY_LOCATION, fun: { Fungible: 1000n } }
   const mockSystemAsset: TAssetInfo = {
@@ -61,6 +64,7 @@ describe('createTypeAndThenCall', () => {
     systemAsset: mockSystemAsset,
     options: {
       api: mockApi,
+      chain: mockChain,
       address: 'dest-address',
       version: mockVersion,
       currency: { amount: 1000n },
@@ -71,11 +75,13 @@ describe('createTypeAndThenCall', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockApi.deserializeExtrinsics = vi.fn()
+    mockApi.clone = vi.fn().mockReturnValue(mockApi)
     vi.mocked(createTypeAndThenCallContext).mockResolvedValue(mockContext)
-    vi.mocked(createCustomXcm).mockReturnValue(mockCustomXcm)
+    vi.mocked(createCustomXcm).mockResolvedValue(mockCustomXcm)
     vi.mocked(createRefundInstruction).mockReturnValue(mockRefundInstruction)
     vi.mocked(computeAllFees).mockResolvedValue(mockFees)
     vi.mocked(buildTypeAndThenCall).mockReturnValue(mockSerializedCall)
+    vi.mocked(getBridgeStatus).mockResolvedValue('Normal')
     vi.mocked(createAsset).mockReturnValue(mockAsset)
     vi.mocked(localizeLocation).mockImplementation((_, location) => location)
     vi.mocked(parseUnits).mockImplementation(value => BigInt(value.toString()))
@@ -94,7 +100,7 @@ describe('createTypeAndThenCall', () => {
     }
     vi.mocked(createTypeAndThenCallContext).mockResolvedValue(dotContext)
 
-    const result = await createTypeAndThenCall(mockChain, mockContext.options)
+    const result = await createTypeAndThenCall(mockContext.options)
 
     expect(result).toBe(mockSerializedCall)
 
@@ -140,7 +146,7 @@ describe('createTypeAndThenCall', () => {
     }
     vi.mocked(createTypeAndThenCallContext).mockResolvedValue(kusamaContext)
 
-    const result = await createTypeAndThenCall(mockChain, mockContext.options)
+    const result = await createTypeAndThenCall(mockContext.options)
 
     expect(result).toBe(mockSerializedCall)
 
@@ -157,13 +163,13 @@ describe('createTypeAndThenCall', () => {
 
     vi.mocked(computeAllFees).mockResolvedValue(customFees)
 
-    await createTypeAndThenCall(mockChain, mockContext.options)
+    await createTypeAndThenCall(mockContext.options)
 
     expect(createAsset).toHaveBeenNthCalledWith(1, mockVersion, 3000n, RELAY_LOCATION)
   })
 
   it('should build custom XCM with computed fees', async () => {
-    await createTypeAndThenCall(mockChain, mockContext.options)
+    await createTypeAndThenCall(mockContext.options)
 
     expect(createCustomXcm).toHaveBeenCalledTimes(1)
     expect(createCustomXcm).toHaveBeenCalledWith(
@@ -176,8 +182,23 @@ describe('createTypeAndThenCall', () => {
     )
   })
 
-  it('should resolve system asset amount when calculating fees', () => {
-    const result = constructTypeAndThenCall(mockContext)
+  it('throws BridgeHaltedError when snowbridge is halted', async () => {
+    const snowbridgeContext = {
+      ...mockContext,
+      isSnowbridge: true
+    }
+
+    vi.mocked(createTypeAndThenCallContext).mockResolvedValue(snowbridgeContext)
+    vi.mocked(getBridgeStatus).mockResolvedValue('Halted')
+
+    await expect(createTypeAndThenCall(mockContext.options)).rejects.toBeInstanceOf(
+      BridgeHaltedError
+    )
+    expect(getBridgeStatus).toHaveBeenCalledWith(mockApi.clone())
+  })
+
+  it('should resolve system asset amount when calculating fees', async () => {
+    const result = await constructTypeAndThenCall(mockContext)
 
     expect(result).toBe(mockSerializedCall)
     expect(parseUnits).toHaveBeenCalledWith('1', 12)
@@ -193,7 +214,7 @@ describe('createTypeAndThenCall', () => {
 
     const spy = vi.spyOn(mockApi, 'deserializeExtrinsics')
 
-    await createTypeAndThenCall(mockChain, mockContext.options)
+    await createTypeAndThenCall(mockContext.options)
 
     const feeCallback = vi.mocked(computeAllFees).mock.calls[0][1]
 
@@ -216,7 +237,7 @@ describe('createTypeAndThenCall', () => {
     expect(spy).toHaveBeenCalledWith(mockSerializedCall)
   })
 
-  it('creates refund instruction when senderAddress provided', () => {
+  it('creates refund instruction when senderAddress provided', async () => {
     const contextWithSender = {
       ...mockContext,
       options: {
@@ -225,7 +246,7 @@ describe('createTypeAndThenCall', () => {
       }
     }
 
-    constructTypeAndThenCall(contextWithSender, mockFees)
+    await constructTypeAndThenCall(contextWithSender, mockFees)
 
     expect(createRefundInstruction).toHaveBeenCalledWith(mockApi, 'refund-address', mockVersion, 2)
     expect(createCustomXcm).toHaveBeenCalledWith(
@@ -236,5 +257,76 @@ describe('createTypeAndThenCall', () => {
       mockRefundInstruction,
       mockFees
     )
+  })
+
+  it('should pass through overriddenAsset when it is an array', async () => {
+    const overriddenAssets: TAssetWithFee[] = [
+      {
+        id: DOT_LOCATION,
+        fun: { Fungible: 123n },
+        isFeeAsset: true
+      },
+      { id: { parents: 0, interior: 'Here' }, fun: { Fungible: 456n } }
+    ]
+
+    const contextWithOverriddenArray = {
+      ...mockContext,
+      options: {
+        ...mockContext.options,
+        overriddenAsset: overriddenAssets
+      }
+    } as TTypeAndThenCallContext<unknown, unknown>
+
+    vi.mocked(createAsset).mockClear()
+    vi.mocked(localizeLocation).mockClear()
+    vi.mocked(sortAssets).mockClear()
+    vi.mocked(buildTypeAndThenCall).mockClear()
+
+    const result = await constructTypeAndThenCall(contextWithOverriddenArray, mockFees)
+
+    expect(result).toBe(mockSerializedCall)
+    expect(buildTypeAndThenCall).toHaveBeenCalledWith(
+      contextWithOverriddenArray,
+      false,
+      mockCustomXcm,
+      overriddenAssets
+    )
+    expect(createAsset).not.toHaveBeenCalled()
+    expect(localizeLocation).not.toHaveBeenCalled()
+    expect(sortAssets).not.toHaveBeenCalled()
+  })
+
+  it('should wrap overriddenAsset when it is a location', async () => {
+    const overriddenLocation = {
+      parents: 1,
+      interior: { X1: { Parachain: 2000 } }
+    }
+
+    const contextWithOverriddenLocation = {
+      ...mockContext,
+      options: {
+        ...mockContext.options,
+        overriddenAsset: overriddenLocation
+      }
+    } as TTypeAndThenCallContext<unknown, unknown>
+
+    vi.mocked(createAsset).mockClear()
+    vi.mocked(localizeLocation).mockClear()
+    vi.mocked(sortAssets).mockClear()
+    vi.mocked(buildTypeAndThenCall).mockClear()
+
+    const result = await constructTypeAndThenCall(contextWithOverriddenLocation, mockFees)
+
+    expect(result).toBe(mockSerializedCall)
+    expect(createAsset).toHaveBeenCalledTimes(1)
+    expect(createAsset).toHaveBeenCalledWith(mockVersion, 1000n, overriddenLocation)
+    expect(buildTypeAndThenCall).toHaveBeenCalledWith(
+      contextWithOverriddenLocation,
+      false,
+      mockCustomXcm,
+      [mockAsset]
+    )
+    expect(localizeLocation).not.toHaveBeenCalled()
+    expect(sortAssets).not.toHaveBeenCalled()
   })
 })

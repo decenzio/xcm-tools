@@ -56,8 +56,10 @@ Published under [MIT License](https://github.com/paraspell/xcm-tools/blob/main/p
 
 ## Supported by
 
-<div>
-  <div align="center" style="margin-top: 20px;">
-      <img width="750" alt="version" src="https://github.com/user-attachments/assets/29e4b099-d90c-46d6-a3ce-94edfbda003c" />
-  </div>
-</div>
+<p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/paraspell/presskit/blob/main/logos_supporters/polkadot_kusama_transparent.png">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/paraspell/presskit/blob/main/logos_supporters/polkadot_kusama_w3f_standard.png">
+      <img width="750" alt="Shows a black logo in light color mode and a white one in dark color mode." src="https://github.com/paraspell/presskit/blob/main/logos_supporters/polkadot_kusama_w3f_standard.png">
+    </picture>
+</p>

@@ -1,4 +1,5 @@
 import type {
+  TAmount,
   TAssetInfo,
   TChain,
   TCurrencyInput,
@@ -107,7 +108,7 @@ export type TTransferOptions = {
    * The amount to transfer.
    * @example '1000000000000000'
    */
-  amount: string;
+  amount: TAmount;
   /**
    * The sender address.
    */
@@ -212,10 +213,7 @@ export type TDexConfig = {
 
 export type TAssetsRecord = Record<TExchangeChain, TDexConfig>;
 
-export type TExchangeInput =
-  | TExchangeChain
-  | [TExchangeChain, TExchangeChain, ...TExchangeChain[]]
-  | undefined;
+export type TExchangeInput = TExchangeChain | [TExchangeChain, ...TExchangeChain[]] | undefined;
 
 export type TTransactionType = 'TRANSFER' | 'SWAP' | 'SWAP_AND_TRANSFER';
 
