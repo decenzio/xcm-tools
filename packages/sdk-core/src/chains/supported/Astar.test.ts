@@ -3,30 +3,19 @@ import { Version } from '@paraspell/sdk-common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IPolkadotApi } from '../../api'
-import { ScenarioNotSupportedError } from '../../errors'
 import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
-import { transferXTokens } from '../../pallets/xTokens'
-import type {
-  TPolkadotXCMTransferOptions,
-  TTransferLocalOptions,
-  TXTokensTransferOptions
-} from '../../types'
+import type { TPolkadotXCMTransferOptions, TTransferLocalOptions } from '../../types'
 import { getChain } from '../../utils'
 import type Astar from './Astar'
 
 vi.mock('../../pallets/polkadotXcm')
-vi.mock('../../pallets/xTokens')
 
 describe('Astar', () => {
   let astar: Astar<unknown, unknown>
-  const mockPolkadotXCMInput = {
+  const mockInput = {
     scenario: 'ParaToPara',
     assetInfo: { symbol: 'DOT', amount: 100n }
   } as TPolkadotXCMTransferOptions<unknown, unknown>
-
-  const mockXTokensInput = {
-    asset: { assetId: '123', amount: 100n }
-  } as TXTokensTransferOptions<unknown, unknown>
 
   beforeEach(() => {
     astar = getChain<unknown, unknown, 'Astar'>('Astar')
@@ -39,22 +28,16 @@ describe('Astar', () => {
     expect(astar.version).toBe(Version.V5)
   })
 
-  it('should call transferPolkadotXCM with limitedReserveTransferAssets for ParaToPara scenario', async () => {
-    await astar.transferPolkadotXCM(mockPolkadotXCMInput)
+  it('should create typeAndThen call when transferPolkadotXcm is invoked', async () => {
+    await astar.transferPolkadotXCM(mockInput)
     expect(transferPolkadotXcm).toHaveBeenCalledWith(
-      mockPolkadotXCMInput,
-      'limited_reserve_transfer_assets',
-      'Unlimited'
+      mockInput,
+      'transfer_assets_using_type_and_then'
     )
   })
 
-  it('should call transferXTokens with currencyID', () => {
-    astar.transferXTokens(mockXTokensInput)
-    expect(transferXTokens).toHaveBeenCalledWith(mockXTokensInput, 123n)
-  })
-
-  it('should throw ScenarioNotSupportedError when calling transferRelayToPara', () => {
-    expect(() => astar.transferRelayToPara()).toThrow(ScenarioNotSupportedError)
+  it('should return false for isRelayToParaEnabled', () => {
+    expect(astar.isRelayToParaEnabled()).toBe(false)
   })
 
   describe('transferLocalNonNativeAsset', () => {

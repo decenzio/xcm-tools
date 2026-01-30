@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import type { TAsset } from '@paraspell/assets'
 import { findAssetInfoOrThrow, isOverrideLocationSpecifier } from '@paraspell/assets'
+import type { TSubstrateChain } from '@paraspell/sdk-common'
 import { type TLocation, Version } from '@paraspell/sdk-common'
 import type { WriteContractReturnType } from 'viem'
 import { createPublicClient, getContract, http } from 'viem'
@@ -26,15 +27,10 @@ import abi from './abi-xcm.json' with { type: 'json' }
 const xcmInterfacePrecompile = '0x000000000000000000000000000000000000081A'
 const XCDOT = '0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080'
 
-export const transferMoonbeamToEth = async <TApi, TRes>({
-  api,
-  from,
-  to,
-  signer,
-  address,
-  ahAddress,
-  currency
-}: TEvmBuilderOptions<TApi, TRes>) => {
+export const transferMoonbeamToEth = async <TApi, TRes>(
+  from: TSubstrateChain,
+  { api, to, signer, address, ahAddress, currency }: TEvmBuilderOptions<TApi, TRes>
+) => {
   if (!ahAddress) {
     throw new MissingParameterError('ahAddress')
   }
@@ -90,6 +86,7 @@ export const transferMoonbeamToEth = async <TApi, TRes>({
   const customXcm = createCustomXcmOnDest(
     {
       api,
+      chain: from,
       destination: to,
       address,
       scenario: 'ParaToPara',

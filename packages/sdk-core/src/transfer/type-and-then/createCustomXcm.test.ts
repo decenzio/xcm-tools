@@ -5,20 +5,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { IPolkadotApi } from '../../api'
 import { MIN_AMOUNT, RELAY_LOCATION } from '../../constants'
 import { AmountTooLowError } from '../../errors'
-import { createDestination } from '../../pallets/xcmPallet/utils'
 import type { TTypeAndThenCallContext } from '../../types'
-import { createBeneficiaryLocation, localizeLocation } from '../../utils'
+import { createBeneficiaryLocation, createDestination, localizeLocation } from '../../utils'
 import { createCustomXcm } from './createCustomXcm'
 
 vi.mock('@paraspell/sdk-common')
-vi.mock('../../pallets/xcmPallet/utils')
 vi.mock('../../utils/location')
 
 describe('createCustomXcm', () => {
   const isDepositReserveInstruction = (
     instruction: unknown
   ): instruction is Extract<
-    ReturnType<typeof createCustomXcm>[number],
+    Awaited<ReturnType<typeof createCustomXcm>>[number],
     { DepositReserveAsset: unknown }
   > =>
     typeof instruction === 'object' && instruction !== null && 'DepositReserveAsset' in instruction
@@ -26,14 +24,14 @@ describe('createCustomXcm', () => {
   const isInitiateTeleportInstruction = (
     instruction: unknown
   ): instruction is Extract<
-    ReturnType<typeof createCustomXcm>[number],
+    Awaited<ReturnType<typeof createCustomXcm>>[number],
     { InitiateTeleport: unknown }
   > => typeof instruction === 'object' && instruction !== null && 'InitiateTeleport' in instruction
 
   const isDepositAssetInstruction = (
     instruction: unknown
   ): instruction is Extract<
-    ReturnType<typeof createCustomXcm>[number],
+    Awaited<ReturnType<typeof createCustomXcm>>[number],
     { DepositAsset: unknown }
   > => typeof instruction === 'object' && instruction !== null && 'DepositAsset' in instruction
 
@@ -41,7 +39,7 @@ describe('createCustomXcm', () => {
     step: unknown
   ): step is Extract<
     Extract<
-      ReturnType<typeof createCustomXcm>[number],
+      Awaited<ReturnType<typeof createCustomXcm>>[number],
       { DepositReserveAsset: unknown }
     >['DepositReserveAsset']['xcm'][number],
     { BuyExecution: unknown }
@@ -83,8 +81,8 @@ describe('createCustomXcm', () => {
   })
 
   describe('DepositReserveAsset (different chains)', () => {
-    it('uses Definite assets when destFee is not MIN_FEE', () => {
-      const result = createCustomXcm(
+    it('uses Definite assets when destFee is not MIN_FEE', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           origin: {
@@ -122,10 +120,12 @@ describe('createCustomXcm', () => {
       expect(definiteAssets?.[1].fun).toEqual({ Fungible: 1000000n })
     })
 
-    it('returns InitiateTeleport when destination is a system chain', () => {
-      vi.mocked(isTrustedChain).mockImplementation(chain => chain === 'Kusama')
+    it('returns InitiateTeleport when reserve and destination are system chains', async () => {
+      vi.mocked(isTrustedChain).mockImplementation(
+        chain => chain === 'Kusama' || chain === 'Hydration'
+      )
 
-      const result = createCustomXcm(
+      const result = await createCustomXcm(
         {
           ...mockContext,
           origin: {
@@ -166,10 +166,10 @@ describe('createCustomXcm', () => {
       expect(xcm[1]).toHaveProperty('DepositAsset')
     })
 
-    it('uses destination api for beneficiary when bridge between AssetHubPolkadot and AssetHubKusama is in use', () => {
+    it('uses destination api for beneficiary when bridge between AssetHubPolkadot and AssetHubKusama is in use', async () => {
       const destApi = {} as IPolkadotApi<unknown, unknown>
 
-      createCustomXcm(
+      await createCustomXcm(
         {
           ...mockContext,
           origin: { chain: 'AssetHubPolkadot', api: mockApi },
@@ -193,11 +193,18 @@ describe('createCustomXcm', () => {
       )
     })
 
-    it('excludes DOT from assetsFilter when asset location equals RELAY_LOCATION', () => {
-      const result = createCustomXcm(mockContext, 1, false, mockContext.assetInfo.amount, null, {
-        hopFees: 100n,
-        destFee: 200n
-      })
+    it('excludes DOT from assetsFilter when asset location equals RELAY_LOCATION', async () => {
+      const result = await createCustomXcm(
+        mockContext,
+        1,
+        false,
+        mockContext.assetInfo.amount,
+        null,
+        {
+          hopFees: 100n,
+          destFee: 200n
+        }
+      )
 
       const depositReserveInstruction = result.find(isDepositReserveInstruction)
       expect(depositReserveInstruction).toBeDefined()
@@ -207,8 +214,8 @@ describe('createCustomXcm', () => {
       expect(depositReserveAsset.assets.Definite?.[0].fun).toEqual({ Fungible: 1000000n })
     })
 
-    it('calculates BuyExecution fees correctly with DOT included', () => {
-      const result = createCustomXcm(
+    it('calculates BuyExecution fees correctly with DOT included', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           isRelayAsset: false
@@ -236,8 +243,8 @@ describe('createCustomXcm', () => {
       expect(buyExecution.weight_limit).toBe('Unlimited')
     })
 
-    it('calculates BuyExecution fees correctly without DOT', () => {
-      const result = createCustomXcm(
+    it('calculates BuyExecution fees correctly without DOT', async () => {
+      const result = await createCustomXcm(
         { ...mockContext, isRelayAsset: false },
         2,
         false,
@@ -261,8 +268,8 @@ describe('createCustomXcm', () => {
       expect(buyExecution.fees.id).toEqual(RELAY_LOCATION)
     })
 
-    it('uses default fees when fees parameter not provided', () => {
-      const result = createCustomXcm(
+    it('uses default fees when fees parameter not provided', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           isRelayAsset: false
@@ -286,8 +293,8 @@ describe('createCustomXcm', () => {
       }
     })
 
-    it('throws AmountTooLowError when buyExecutionAmount is negative', () => {
-      expect(() =>
+    it('throws AmountTooLowError when buyExecutionAmount is negative', async () => {
+      await expect(
         createCustomXcm(
           {
             ...mockContext,
@@ -304,13 +311,13 @@ describe('createCustomXcm', () => {
             destFee: 200n
           }
         )
-      ).toThrow(AmountTooLowError)
+      ).rejects.toThrow(AmountTooLowError)
     })
   })
 
   describe('DepositAsset (same chain scenarios)', () => {
-    it('returns DepositAsset when chain equals reserveChain', () => {
-      const result = createCustomXcm(
+    it('returns DepositAsset when chain equals reserveChain', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           origin: {
@@ -340,13 +347,15 @@ describe('createCustomXcm', () => {
       const depositAsset = depositAssetInstruction!.DepositAsset
       expect(depositAsset.assets).toHaveProperty('Wild')
       expect(depositAsset.assets.Wild).toHaveProperty('AllOf')
-      expect(depositAsset.assets.Wild.AllOf).toHaveProperty('id')
-      expect(depositAsset.assets.Wild.AllOf).toHaveProperty('fun', 'Fungible')
+      if ('AllOf' in depositAsset.assets.Wild) {
+        expect(depositAsset.assets.Wild.AllOf).toHaveProperty('id')
+        expect(depositAsset.assets.Wild.AllOf).toHaveProperty('fun', 'Fungible')
+      }
       expect(depositAsset).toHaveProperty('beneficiary')
     })
 
-    it('returns DepositAsset when destChain equals reserveChain', () => {
-      const result = createCustomXcm(
+    it('returns DepositAsset when destChain equals reserveChain', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           origin: {
@@ -377,8 +386,8 @@ describe('createCustomXcm', () => {
       expect(depositAsset.beneficiary).toEqual(mockBeneficiary)
     })
 
-    it('returns DepositAsset when both chain and destChain equal reserveChain', () => {
-      const result = createCustomXcm(
+    it('returns DepositAsset when both chain and destChain equal reserveChain', async () => {
+      const result = await createCustomXcm(
         {
           ...mockContext,
           origin: {

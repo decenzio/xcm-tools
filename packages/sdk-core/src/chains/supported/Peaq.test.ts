@@ -13,6 +13,7 @@ vi.mock('../../pallets/xTokens')
 
 describe('Peaq', () => {
   let chain: Peaq<unknown, unknown>
+
   const mockInput = {
     asset: { assetId: '123', amount: 100n },
     scenario: 'ParaToPara'
@@ -43,8 +44,8 @@ describe('Peaq', () => {
     expect(() => chain.transferXTokens(invalidInput)).toThrow(ScenarioNotSupportedError)
   })
 
-  it('should throw ScenarioNotSupportedError for transferRelayToPara', () => {
-    expect(() => chain.transferRelayToPara()).toThrow(ScenarioNotSupportedError)
+  it('should return false for isRelayToParaEnabled', () => {
+    expect(chain.isRelayToParaEnabled()).toBe(false)
   })
 
   const mockApi = {

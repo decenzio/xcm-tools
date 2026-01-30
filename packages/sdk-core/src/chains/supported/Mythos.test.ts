@@ -57,26 +57,21 @@ describe('Mythos', () => {
     expect(mythos.version).toBe(Version.V5)
   })
 
-  it('should call transferPolkadotXCM with limitedReserveTransferAssets for non-AssetHubPolkadot destination', async () => {
+  it('should call transferPolkadotXCM for non-AssetHubPolkadot destination', async () => {
     vi.spyOn(mythos, 'getNativeAssetSymbol').mockReturnValue('MYTH')
     await mythos.transferPolkadotXCM(mockInput)
-    expect(transferPolkadotXcm).toHaveBeenCalledWith(
-      mockInput,
-      'limited_reserve_transfer_assets',
-      'Unlimited'
-    )
+    expect(transferPolkadotXcm).toHaveBeenCalledWith(mockInput)
   })
 
-  it('should call transferPolkadotXCM with limitedTeleportAssets for AssetHubPolkadot destination', async () => {
+  it('should call transferPolkadotXCM for AssetHubPolkadot destination', async () => {
     vi.spyOn(mythos, 'getNativeAssetSymbol').mockReturnValue('MYTH')
 
     await mythos.transferPolkadotXCM({ ...mockInput, destination: 'AssetHubPolkadot' })
 
-    expect(transferPolkadotXcm).toHaveBeenCalledWith(
-      { ...mockInput, destination: 'AssetHubPolkadot' },
-      'limited_teleport_assets',
-      'Unlimited'
-    )
+    expect(transferPolkadotXcm).toHaveBeenCalledWith({
+      ...mockInput,
+      destination: 'AssetHubPolkadot'
+    })
   })
 
   it('should throw ScenarioNotSupportedError for unsupported scenario', async () => {
@@ -109,8 +104,8 @@ describe('Mythos', () => {
     expect(result).toBe('handled')
   })
 
-  it('should throw ScenarioNotSupportedError for transferRelayToPara', () => {
-    expect(() => mythos.transferRelayToPara()).toThrow(ScenarioNotSupportedError)
+  it('should return false for isRelayToParaEnabled', () => {
+    expect(mythos.isRelayToParaEnabled()).toBe(false)
   })
 
   describe('Ethereum transfers', () => {

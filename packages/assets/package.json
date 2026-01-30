@@ -1,6 +1,6 @@
 {
   "name": "@paraspell/assets",
-  "version": "12.2.2",
+  "version": "12.5.0",
   "description": "Assets for ParaSpell XCM/XCMP tool for developers",
   "repository": {
     "type": "git",
@@ -46,12 +46,12 @@
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-typescript": "^12.3.0",
-    "@snowbridge/registry": "^0.2.20",
+    "@snowbridge/registry": "^0.3.2",
     "@vitest/coverage-v8": "^4.0.16",
     "dotenv": "^17.2.3",
     "rollup": "^4.54.0",
     "rollup-plugin-dts": "^6.3.0",
     "ts-node": "^10.9.2",
-    "viem": "2.40.3"
+    "viem": "2.45.0"
   }
 }

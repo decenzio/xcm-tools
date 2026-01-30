@@ -10,7 +10,7 @@ import {
   Text,
 } from "@mantine/core";
 import { IconBrandGithub, IconChevronDown } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { links } from "../AppShell/links";
 import classes from "./Footer.module.css";
@@ -107,7 +107,7 @@ export const Footer = () => {
       </Container>
       <Container className={classes.afterFooter}>
         <Text c="dimmed" size="sm">
-          © 2025 paraspell.xyz · Powered by{" "}
+          © 2026 paraspell.xyz · Powered by{" "}
           <Anchor
             href="https://www.netlify.com"
             target="_blank"

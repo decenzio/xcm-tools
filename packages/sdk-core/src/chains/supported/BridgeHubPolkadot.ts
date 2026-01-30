@@ -5,11 +5,10 @@ import { Version } from '@paraspell/sdk-common'
 
 import { ScenarioNotSupportedError } from '../../errors'
 import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
-import type { TRelayToParaOverrides } from '../../types'
 import { type IPolkadotXCMTransfer, type TPolkadotXCMTransferOptions } from '../../types'
-import Parachain from '../Parachain'
+import Chain from '../Chain'
 
-class BridgeHubPolkadot<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTransfer {
+class BridgeHubPolkadot<TApi, TRes> extends Chain<TApi, TRes> implements IPolkadotXCMTransfer {
   constructor(
     chain: TParachain = 'BridgeHubPolkadot',
     info: string = 'polkadotBridgeHub',
@@ -28,11 +27,7 @@ class BridgeHubPolkadot<TApi, TRes> extends Parachain<TApi, TRes> implements IPo
       )
     }
 
-    return transferPolkadotXcm(input, 'limited_teleport_assets', 'Unlimited')
-  }
-
-  getRelayToParaOverrides(): TRelayToParaOverrides {
-    return { transferType: 'teleport' }
+    return transferPolkadotXcm(input)
   }
 }
 

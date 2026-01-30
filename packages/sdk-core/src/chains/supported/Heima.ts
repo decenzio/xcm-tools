@@ -7,9 +7,9 @@ import { Version } from '@paraspell/sdk-common'
 import { ScenarioNotSupportedError } from '../../errors'
 import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
 import type { IPolkadotXCMTransfer, TPolkadotXCMTransferOptions } from '../../types'
-import Parachain from '../Parachain'
+import Chain from '../Chain'
 
-class Heima<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTransfer {
+class Heima<TApi, TRes> extends Chain<TApi, TRes> implements IPolkadotXCMTransfer {
   constructor(
     chain: TParachain = 'Heima',
     info: string = 'heima',
@@ -32,7 +32,7 @@ class Heima<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTra
       )
     }
 
-    return transferPolkadotXcm(input, 'limited_reserve_transfer_assets', 'Unlimited')
+    return transferPolkadotXcm(input)
   }
 }
 

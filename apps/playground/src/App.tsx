@@ -13,7 +13,7 @@ import { ReactiveDotProvider } from '@reactive-dot/react';
 import hljs from 'highlight.js/lib/core';
 import tsLang from 'highlight.js/lib/languages/typescript';
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v7';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 
 import { AppShell } from './components/AppShell/AppShell';
 import { WalletProvider } from './providers/WalletProvider';

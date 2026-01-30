@@ -6,12 +6,12 @@ import { Parents, Version } from '@paraspell/sdk-common'
 
 import { ScenarioNotSupportedError } from '../../errors'
 import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
-import { createVersionedDestination } from '../../pallets/xcmPallet/utils'
 import {
   type IPolkadotXCMTransfer,
   type TPolkadotXCMTransferOptions,
   type TSerializedExtrinsics
 } from '../../types'
+import { createVersionedDestination } from '../../utils'
 import {
   assertAddressIsString,
   assertHasId,
@@ -23,15 +23,15 @@ import { createCustomXcmOnDest } from '../../utils/ethereum/createCustomXcmOnDes
 import { generateMessageId } from '../../utils/ethereum/generateMessageId'
 import { getMythosOriginFee } from '../../utils/fees/getMythosOriginFee'
 import { handleToAhTeleport } from '../../utils/transfer'
+import Chain from '../Chain'
 import { getParaId } from '../config'
-import Parachain from '../Parachain'
 
 export const createTypeAndThenTransfer = async <TApi, TRes>(
   options: TPolkadotXCMTransferOptions<TApi, TRes>,
   chain: TSubstrateChain,
   version: Version
 ): Promise<TSerializedExtrinsics> => {
-  const { api, assetInfo: asset, senderAddress, address, destination } = options
+  const { api, assetInfo: asset, senderAddress, address } = options
 
   const ethAsset = findAssetInfoOrThrow('Ethereum', { symbol: asset.symbol }, null)
 
@@ -51,11 +51,13 @@ export const createTypeAndThenTransfer = async <TApi, TRes>(
 
   const nativeMythAmount = await getMythosOriginFee(api)
 
+  const hopDestination: TSubstrateChain = 'AssetHubPolkadot'
+
   return {
     module: 'PolkadotXcm',
     method: 'transfer_assets_using_type_and_then',
     params: {
-      dest: createVersionedDestination(version, chain, destination, getParaId('AssetHubPolkadot')),
+      dest: createVersionedDestination(version, chain, hopDestination, getParaId(hopDestination)),
       assets: {
         [version]: [
           createAsset(version, nativeMythAmount, {
@@ -79,32 +81,21 @@ export const createTypeAndThenTransfer = async <TApi, TRes>(
   }
 }
 
-class Mythos<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTransfer {
+class Mythos<TApi, TRes> extends Chain<TApi, TRes> implements IPolkadotXCMTransfer {
   constructor() {
     super('Mythos', 'mythos', 'Polkadot', Version.V5)
-  }
-
-  private createTx<TApi, TRes>(input: TPolkadotXCMTransferOptions<TApi, TRes>): Promise<TRes> {
-    const { scenario, destination } = input
-    if (scenario !== 'ParaToPara') {
-      throw new ScenarioNotSupportedError({ chain: this.chain, scenario })
-    }
-
-    return transferPolkadotXcm(
-      input,
-      destination === 'AssetHubPolkadot'
-        ? 'limited_teleport_assets'
-        : 'limited_reserve_transfer_assets',
-      'Unlimited'
-    )
   }
 
   async transferPolkadotXCM<TApi, TRes>(
     input: TPolkadotXCMTransferOptions<TApi, TRes>
   ): Promise<TRes> {
-    const { api, destination } = input
+    const { api, destination, scenario } = input
 
-    const defaultTx = await this.createTx(input)
+    if (scenario !== 'ParaToPara') {
+      throw new ScenarioNotSupportedError({ chain: this.chain, scenario })
+    }
+
+    const defaultTx = await transferPolkadotXcm(input)
 
     if (destination === 'AssetHubPolkadot') {
       return handleToAhTeleport('Mythos', input, defaultTx)
@@ -119,8 +110,8 @@ class Mythos<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTr
     return defaultTx
   }
 
-  transferRelayToPara(): Promise<TSerializedExtrinsics> {
-    throw new ScenarioNotSupportedError({ chain: this.chain, scenario: 'RelayToPara' })
+  isRelayToParaEnabled(): boolean {
+    return false
   }
 }
 

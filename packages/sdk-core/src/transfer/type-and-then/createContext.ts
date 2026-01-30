@@ -1,43 +1,57 @@
 import { findNativeAssetInfoOrThrow } from '@paraspell/assets'
+import type { TChain } from '@paraspell/sdk-common'
 import {
   deepEqual,
   getJunctionValue,
+  isExternalChain,
+  isSnowbridge,
   isSubstrateBridge,
   type TLocation,
   type TSubstrateChain
 } from '@paraspell/sdk-common'
 
 import { RELAY_LOCATION } from '../../constants'
-import type { TPolkadotXCMTransferOptions, TTypeAndThenCallContext } from '../../types'
+import type {
+  TPolkadotXCMTransferOptions,
+  TTypeAndThenCallContext,
+  TTypeAndThenOverrides
+} from '../../types'
 import {
   assertHasLocation,
   assertToIsString,
   getAssetReserveChain,
   getRelayChainOf
 } from '../../utils'
+import { getEthereumJunction } from '../../utils/location/getEthereumJunction'
 
-export const getSubBridgeReserve = (
+export const getBridgeReserve = (
   chain: TSubstrateChain,
-  destination: TSubstrateChain,
+  destination: TChain,
   location: TLocation
-): TSubstrateChain => {
-  const destRelay = getRelayChainOf(destination).toLowerCase()
-  const isDestReserve = deepEqual(getJunctionValue(location, 'GlobalConsensus'), {
-    [destRelay]: null
-  })
-  if (isDestReserve) return destination
-  return chain
+): TChain => {
+  const isExternal = isExternalChain(destination)
+
+  const destRelay = isExternal ? destination : getRelayChainOf(destination).toLowerCase()
+
+  const expectedConsensus = isExternal
+    ? getEthereumJunction(chain, false).GlobalConsensus
+    : { [destRelay]: null }
+
+  const isDestReserve = deepEqual(getJunctionValue(location, 'GlobalConsensus'), expectedConsensus)
+
+  return isDestReserve ? destination : chain
 }
 
 const resolveReserveChain = (
   chain: TSubstrateChain,
-  destination: TSubstrateChain,
+  destination: TChain,
   assetLocation: TLocation,
   isSubBridge: boolean,
+  isSnowbridge: boolean,
   overrideReserve?: TSubstrateChain
-): TSubstrateChain => {
-  if (isSubBridge) {
-    return getSubBridgeReserve(chain, destination, assetLocation)
+): TChain => {
+  if (isSubBridge || isSnowbridge) {
+    return getBridgeReserve(chain, destination, assetLocation)
   }
 
   if (overrideReserve !== undefined) {
@@ -48,24 +62,25 @@ const resolveReserveChain = (
 }
 
 export const createTypeAndThenCallContext = async <TApi, TRes>(
-  chain: TSubstrateChain,
   options: TPolkadotXCMTransferOptions<TApi, TRes>,
-  overrideReserve?: TSubstrateChain
+  overrides: TTypeAndThenOverrides
 ): Promise<TTypeAndThenCallContext<TApi, TRes>> => {
-  const { api, destination, assetInfo } = options
+  const { api, chain, destination, assetInfo } = options
 
   assertHasLocation(assetInfo)
   assertToIsString(destination)
 
   const destinationChain = destination as TSubstrateChain
   const isSubBridge = isSubstrateBridge(chain, destinationChain)
+  const isSb = isSnowbridge(chain, destinationChain)
 
   const reserveChain = resolveReserveChain(
     chain,
     destinationChain,
     assetInfo.location,
     isSubBridge,
-    overrideReserve
+    isSb,
+    overrides.reserveChain
   )
 
   const NO_FEE_ASSET_LOCS = [
@@ -93,7 +108,9 @@ export const createTypeAndThenCallContext = async <TApi, TRes>(
   const systemAsset = findNativeAssetInfoOrThrow(getRelayChainOf(chain))
 
   const isRelayAsset =
-    NO_FEE_ASSET_LOCS.some(loc => deepEqual(assetInfo.location, loc)) || isSubBridge
+    NO_FEE_ASSET_LOCS.some(loc => deepEqual(assetInfo.location, loc)) ||
+    isSubBridge ||
+    (overrides.noFeeAsset ?? false)
 
   const destApi = api.clone()
   await destApi.init(destinationChain)
@@ -117,6 +134,7 @@ export const createTypeAndThenCallContext = async <TApi, TRes>(
       chain: reserveChain
     },
     isSubBridge,
+    isSnowbridge: isSb,
     isRelayAsset,
     assetInfo,
     options,

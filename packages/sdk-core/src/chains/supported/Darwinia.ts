@@ -10,9 +10,9 @@ import type {
   TTransferLocalOptions
 } from '../../types'
 import { assertHasId } from '../../utils'
-import Parachain from '../Parachain'
+import Chain from '../Chain'
 
-class Darwinia<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCMTransfer {
+class Darwinia<TApi, TRes> extends Chain<TApi, TRes> implements IPolkadotXCMTransfer {
   constructor() {
     super('Darwinia', 'darwinia', 'Polkadot', Version.V4)
   }
@@ -24,7 +24,7 @@ class Darwinia<TApi, TRes> extends Parachain<TApi, TRes> implements IPolkadotXCM
       throw new ScenarioNotSupportedError({ chain: this.chain, scenario })
     }
 
-    return transferPolkadotXcm(input, 'limited_reserve_transfer_assets', 'Unlimited')
+    return transferPolkadotXcm(input)
   }
 
   transferLocalNonNativeAsset(options: TTransferLocalOptions<TApi, TRes>): TRes {
