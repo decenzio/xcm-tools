@@ -6,12 +6,6 @@ import {
   web3FromAddress,
   web3FromSource,
 } from '@polkadot/extension-dapp';
-import type { Wallet } from '@reactive-dot/core/wallets.js';
-import {
-  useAccounts,
-  useWalletConnector,
-  useWallets,
-} from '@reactive-dot/react';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { type InjectedExtension } from 'polkadot-api/pjs-signer';
 import type { PropsWithChildren } from 'react';
@@ -22,6 +16,7 @@ import AccountSelectModal from '../components/AccountSelectModal/AccountSelectMo
 import { PageRoute } from '../components/PageRoute';
 import PolkadotWalletSelectModal from '../components/WalletSelectModal/WalletSelectModal';
 import { DAPP_NAME, MAIN_FORM_NAME } from '../constants';
+import { useReactiveDotWallet } from '../hooks/useReactiveDotWallet';
 import type { TApiType, TWalletAccount } from '../types';
 import { showErrorNotification } from '../utils/notifications';
 import { WalletContext } from './WalletContext';
@@ -98,13 +93,6 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
 
   const [isUseXcmApiSelected, setIsUseXcmApiSelected] = useState(false);
 
-  const dotWallets = useWallets();
-  const dotAccounts = useAccounts({ chainId: null });
-  const [_, connectDotWallet] = useWalletConnector();
-  const [selectedDotWallet, setSelectedDotWallet] = useState<
-    Wallet | undefined
-  >(undefined);
-
   useEffect(() => {
     if (apiType) {
       localStorage.setItem(STORAGE_API_TYPE_KEY, apiType);
@@ -127,6 +115,21 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
 
   const savedAddressRef = useRef<string | undefined>(undefined);
   const shouldOpenAccountsModal = useRef<boolean>(false);
+  const {
+    walletNames,
+    connectWalletByName,
+    disconnectWallet,
+    getSignerForAddress,
+  } = useReactiveDotWallet({
+    shouldOpenAccountsModal,
+    openAccountsModal,
+    closeAccountsModal,
+    apiType,
+    savedAddressRef,
+    selectedAccount,
+    setSelectedAccount,
+    setAccounts,
+  });
 
   useEffect(() => {
     const initializeFromStorage = async () => {
@@ -167,7 +170,7 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
             setSelectedAccount(undefined);
           }
         } else if (savedApiType === 'PAPI') {
-          const extensions = dotWallets.map((wallet) => wallet.name);
+          const extensions = walletNames;
           setExtensions(extensions);
 
           if (!extensions.length) {
@@ -186,12 +189,9 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
             return;
           }
 
-          const selectedWallet = dotWallets.find(
-            (w) => w.name === savedExtensionName,
-          );
-          if (selectedWallet) {
-            void connectDotWallet(selectedWallet);
-            setSelectedDotWallet(selectedWallet);
+          const didConnect = await connectWalletByName(savedExtensionName);
+          if (!didConnect) {
+            showErrorNotification('Failed to connect to wallet');
           }
         }
       }
@@ -199,69 +199,13 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
     };
 
     void initializeFromStorage();
-  }, [dotWallets, connectDotWallet]);
+  }, [connectWalletByName, walletNames]);
 
   useEffect(() => {
     if (apiType === 'PJS' && selectedAccount) {
       void web3Enable(DAPP_NAME);
     }
   }, [selectedAccount, apiType]);
-
-  // Convert loaded accounts from reactive-dot accounts to our own account format
-  useEffect(() => {
-    if (!selectedDotWallet) {
-      return;
-    }
-
-    const walletAccounts = dotAccounts.filter(
-      (account) => account.wallet.name === selectedDotWallet.name,
-    );
-
-    if (!walletAccounts.length) {
-      if (shouldOpenAccountsModal.current) {
-        showErrorNotification('Selected wallet has no accounts');
-        shouldOpenAccountsModal.current = false;
-      }
-      return;
-    }
-
-    setAccounts(
-      walletAccounts.map((account) => ({
-        address: account.address,
-        meta: {
-          name: account.name,
-          source: selectedDotWallet.name,
-        },
-      })),
-    );
-
-    if (shouldOpenAccountsModal.current) {
-      openAccountsModal();
-      shouldOpenAccountsModal.current = false;
-    }
-  }, [dotAccounts, selectedDotWallet]);
-
-  // Initialize the selected account from the saved address (local storage)
-  useEffect(() => {
-    if (apiType !== 'PAPI') {
-      return;
-    }
-
-    if (!savedAddressRef.current || selectedAccount) {
-      return;
-    }
-
-    const account = accounts.find(
-      (acc) => acc.address === savedAddressRef.current,
-    );
-
-    if (!account) {
-      return;
-    }
-
-    setSelectedAccount(account);
-    savedAddressRef.current = undefined;
-  }, [accounts, apiType, selectedAccount]);
 
   const getSigner = async () => {
     if (!selectedAccount) {
@@ -272,27 +216,12 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
       const injector = await web3FromAddress(selectedAccount.address);
       return injector.signer;
     } else {
-      let account = undefined;
-      if (injectedExtension) {
-        //For special EVM wallet injection in Router
-        account = injectedExtension
-          .getAccounts()
-          .find((account) => account.address === selectedAccount.address);
-      } else {
-        account = dotAccounts.find(
-          (a) => a.address === selectedAccount.address,
-        );
-      }
-
-      if (!account) {
-        throw new Error('No selected account');
-      }
-      return account.polkadotSigner!;
+      return getSignerForAddress(selectedAccount.address, injectedExtension);
     }
   };
 
   const initPapiExtensions = () => {
-    const extensions = dotWallets.map((wallet) => wallet.name);
+    const extensions = walletNames;
 
     if (!extensions.length) {
       showErrorNotification('No wallet extension found, install it to connect');
@@ -334,9 +263,6 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
   };
 
   const onAccountSelect = (account: TWalletAccount) => {
-    setSelectedDotWallet(
-      dotAccounts.find((a) => a.address === account.address)?.wallet as Wallet,
-    );
     setSelectedAccount(account);
     // TODO: Will be unified in v13 when xcm-router recipientAddress
     // is renamed to address
@@ -362,22 +288,18 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
     setAccounts([]);
     setInjectedExtension(undefined);
     setExtensionInLocalStorage(undefined);
-    setSelectedDotWallet(undefined);
+    disconnectWallet();
     localStorage.removeItem(STORAGE_ADDRESS_KEY);
   };
 
   const selectPapiWallet = async (walletName: string) => {
     try {
-      const selectedWallet = dotWallets.find((w) => w.name === walletName);
-
-      if (!selectedWallet) {
+      shouldOpenAccountsModal.current = true;
+      const didConnect = await connectWalletByName(walletName);
+      if (!didConnect) {
         throw new Error();
       }
-
-      await connectDotWallet(selectedWallet);
-      setSelectedDotWallet(selectedWallet);
       setExtensionInLocalStorage(walletName);
-      shouldOpenAccountsModal.current = true;
       closeWalletSelectModal();
     } catch (_e) {
       showErrorNotification('Failed to connect to wallet');
@@ -416,9 +338,9 @@ export const WalletProvider: React.FC<PropsWithChildren<unknown>> = ({
   const onDisconnect = () => {
     shouldOpenAccountsModal.current = false;
     savedAddressRef.current = undefined;
-    setSelectedDotWallet(undefined);
     setSelectedAccount(undefined);
     closeAccountsModal();
+    disconnectWallet();
   };
 
   return (
