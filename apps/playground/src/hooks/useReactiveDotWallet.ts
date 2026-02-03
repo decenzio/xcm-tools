@@ -92,12 +92,21 @@ export const useReactiveDotWallet = ({
       const storedAccounts = Array.from(ledgerWallet.accountStore.values());
 
       if (!storedAccounts.length) {
-        try {
-          const account0 = await ledgerWallet.getConnectedAccount(0);
-          ledgerWallet.accountStore.add(account0);
-        } catch (_error) {
-          showErrorNotification('Failed to read Ledger accounts');
-          return;
+        let index = 0;
+        let loadedAny = false;
+
+        while (true) {
+          try {
+            const account = await ledgerWallet.getConnectedAccount(index);
+            ledgerWallet.accountStore.add(account);
+            loadedAny = true;
+            index += 1;
+          } catch (_error) {
+            if (!loadedAny) {
+              showErrorNotification('Failed to read Ledger accounts');
+            }
+            break;
+          }
         }
       }
 
