@@ -80,7 +80,13 @@ export const useReactiveDotWallet = ({
   const [ledgerDotAccounts, setLedgerDotAccounts] = useState<
     ReactiveDotAccount[]
   >([]);
-  const [ledgerAccountsLoading, setLedgerAccountsLoading] = useState(false);
+  const [ledgerAccountsLoaded, setLedgerAccountsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (selectedWalletName === 'Ledger') {
+      setLedgerAccountsLoaded(false);
+    }
+  }, [selectedWalletName]);
 
   useEffect(() => {
     if (selectedWallet?.name !== 'Ledger' || !ledgerWallet) {
@@ -90,7 +96,6 @@ export const useReactiveDotWallet = ({
     let isCancelled = false;
 
     const loadLedgerAccounts = async () => {
-      setLedgerAccountsLoading(true);
       try {
         const storedAccounts = Array.from(ledgerWallet.accountStore.values());
 
@@ -141,7 +146,7 @@ export const useReactiveDotWallet = ({
         setLedgerDotAccounts(mappedAccounts);
       } finally {
         if (!isCancelled) {
-          setLedgerAccountsLoading(false);
+          setLedgerAccountsLoaded(true);
         }
       }
     };
@@ -150,7 +155,7 @@ export const useReactiveDotWallet = ({
 
     return () => {
       isCancelled = true;
-      setLedgerAccountsLoading(false);
+      setLedgerAccountsLoaded(false);
     };
   }, [ledgerWallet, selectedWallet]);
 
@@ -180,7 +185,7 @@ export const useReactiveDotWallet = ({
       return;
     }
 
-    if (selectedWallet.name === 'Ledger' && ledgerAccountsLoading) {
+    if (selectedWallet.name === 'Ledger' && !ledgerAccountsLoaded) {
       return;
     }
 
@@ -205,7 +210,7 @@ export const useReactiveDotWallet = ({
 
     if (
       !accounts.length &&
-      !(selectedWallet?.name === 'Ledger' && ledgerAccountsLoading)
+      !(selectedWallet?.name === 'Ledger' && !ledgerAccountsLoaded)
     ) {
       closeAccountsModal();
     }
@@ -215,7 +220,7 @@ export const useReactiveDotWallet = ({
     accounts,
     apiType,
     closeAccountsModal,
-    ledgerAccountsLoading,
+    ledgerAccountsLoaded,
     selectedWallet,
     setAccounts,
   ]);
