@@ -203,12 +203,22 @@ export const useReactiveDotWallet = ({
       return;
     }
 
-    if (!accounts.length && !(selectedWallet?.name === 'Ledger' && ledgerAccountsLoading)) {
+    if (
+      !accounts.length &&
+      !(selectedWallet?.name === 'Ledger' && ledgerAccountsLoading)
+    ) {
       closeAccountsModal();
     }
 
     setAccounts(accounts);
-  }, [accounts, apiType, closeAccountsModal, ledgerAccountsLoading, selectedWallet, setAccounts]);
+  }, [
+    accounts,
+    apiType,
+    closeAccountsModal,
+    ledgerAccountsLoading,
+    selectedWallet,
+    setAccounts,
+  ]);
 
   useEffect(() => {
     if (apiType !== 'PAPI') {
