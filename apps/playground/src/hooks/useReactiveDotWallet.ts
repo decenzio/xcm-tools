@@ -1,9 +1,11 @@
+import { encodeAddress } from '@polkadot/keyring';
 import type { Wallet } from '@reactive-dot/core/wallets.js';
 import {
   useAccounts,
   useWalletConnector,
   useWallets,
 } from '@reactive-dot/react';
+import type { LedgerWallet } from '@reactive-dot/wallet-ledger';
 import type { PolkadotSigner } from 'polkadot-api';
 import type { InjectedExtension } from 'polkadot-api/pjs-signer';
 import type { RefObject } from 'react';
@@ -69,21 +71,91 @@ export const useReactiveDotWallet = ({
     [selectedWalletName, wallets],
   );
 
+  const ledgerWallet = useMemo(() => {
+    return wallets.find((wallet) => wallet.name === 'Ledger') as
+      | LedgerWallet
+      | undefined;
+  }, [wallets]);
+
+  const [ledgerDotAccounts, setLedgerDotAccounts] = useState<
+    ReactiveDotAccount[]
+  >([]);
+
+  useEffect(() => {
+    if (selectedWallet?.name !== 'Ledger' || !ledgerWallet) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadLedgerAccounts = async () => {
+      const storedAccounts = Array.from(ledgerWallet.accountStore.values());
+
+      if (!storedAccounts.length) {
+        try {
+          const account0 = await ledgerWallet.getConnectedAccount(0);
+          ledgerWallet.accountStore.add(account0);
+        } catch (_error) {
+          showErrorNotification('Failed to read Ledger accounts');
+          return;
+        }
+      }
+
+      const nextAccounts = Array.from(ledgerWallet.accountStore.values());
+      if (isCancelled) {
+        return;
+      }
+
+      const mappedAccounts: ReactiveDotAccount[] = [];
+
+      nextAccounts.forEach((account) => {
+        const ledgerAccount = account as {
+          publicKey?: Uint8Array;
+          name?: string;
+        };
+        const publicKey = ledgerAccount.publicKey;
+
+        if (!publicKey) {
+          return;
+        }
+
+        mappedAccounts.push({
+          address: encodeAddress(publicKey),
+          name: ledgerAccount.name,
+          wallet: ledgerWallet,
+        });
+      });
+
+      setLedgerDotAccounts(mappedAccounts);
+    };
+
+    void loadLedgerAccounts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [ledgerWallet, selectedWallet]);
+
   const accounts = useMemo<TWalletAccount[]>(() => {
     if (!selectedWallet) {
       return [];
     }
 
-    return dotAccounts
-      .filter((account) => account.wallet.name === selectedWallet.name)
-      .map((account) => ({
-        address: account.address,
-        meta: {
-          name: account.name,
-          source: selectedWallet.name,
-        },
-      }));
-  }, [dotAccounts, selectedWallet]);
+    const sourceAccounts =
+      selectedWallet.name === 'Ledger'
+        ? ledgerDotAccounts
+        : dotAccounts.filter(
+            (account) => account.wallet.name === selectedWallet.name,
+          );
+
+    return sourceAccounts.map((account) => ({
+      address: account.address,
+      meta: {
+        name: account.name,
+        source: selectedWallet.name,
+      },
+    }));
+  }, [dotAccounts, ledgerDotAccounts, selectedWallet]);
 
   useEffect(() => {
     if (!selectedWallet) {
