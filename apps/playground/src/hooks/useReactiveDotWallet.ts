@@ -81,6 +81,7 @@ export const useReactiveDotWallet = ({
     ReactiveDotAccount[]
   >([]);
   const [ledgerAccountsLoaded, setLedgerAccountsLoaded] = useState(false);
+  const [isLedgerLoading, setIsLedgerLoading] = useState(false);
 
   useEffect(() => {
     if (selectedWalletName === 'Ledger') {
@@ -96,6 +97,8 @@ export const useReactiveDotWallet = ({
     let isCancelled = false;
 
     const loadLedgerAccounts = async () => {
+      setIsLedgerLoading(true);
+      setLedgerAccountsLoaded(false);
       try {
         const storedAccounts = Array.from(ledgerWallet.accountStore.values());
 
@@ -146,6 +149,7 @@ export const useReactiveDotWallet = ({
         setLedgerDotAccounts(mappedAccounts);
       } finally {
         if (!isCancelled) {
+          setIsLedgerLoading(false);
           setLedgerAccountsLoaded(true);
         }
       }
@@ -155,6 +159,7 @@ export const useReactiveDotWallet = ({
 
     return () => {
       isCancelled = true;
+      setIsLedgerLoading(false);
       setLedgerAccountsLoaded(false);
     };
   }, [ledgerWallet, selectedWallet]);
@@ -185,12 +190,21 @@ export const useReactiveDotWallet = ({
       return;
     }
 
-    if (selectedWallet.name === 'Ledger' && !ledgerAccountsLoaded) {
+    if (
+      selectedWallet.name === 'Ledger' &&
+      (isLedgerLoading || !ledgerAccountsLoaded)
+    ) {
       return;
     }
 
     if (!accounts.length) {
-      if (shouldOpenAccountsModal.current) {
+      if (
+        shouldOpenAccountsModal.current &&
+        !(
+          selectedWallet.name === 'Ledger' &&
+          (isLedgerLoading || !ledgerAccountsLoaded)
+        )
+      ) {
         showErrorNotification('Selected wallet has no accounts');
         shouldOpenAccountsModal.current = false;
       }
@@ -201,7 +215,14 @@ export const useReactiveDotWallet = ({
       openAccountsModal();
       shouldOpenAccountsModal.current = false;
     }
-  }, [accounts, openAccountsModal, selectedWallet, shouldOpenAccountsModal]);
+  }, [
+    accounts,
+    isLedgerLoading,
+    ledgerAccountsLoaded,
+    openAccountsModal,
+    selectedWallet,
+    shouldOpenAccountsModal,
+  ]);
 
   useEffect(() => {
     if (apiType !== 'PAPI' || !setAccounts) {
