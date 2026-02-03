@@ -80,6 +80,7 @@ export const useReactiveDotWallet = ({
   const [ledgerDotAccounts, setLedgerDotAccounts] = useState<
     ReactiveDotAccount[]
   >([]);
+  const [ledgerAccountsLoading, setLedgerAccountsLoading] = useState(false);
 
   useEffect(() => {
     if (selectedWallet?.name !== 'Ledger' || !ledgerWallet) {
@@ -89,59 +90,67 @@ export const useReactiveDotWallet = ({
     let isCancelled = false;
 
     const loadLedgerAccounts = async () => {
-      const storedAccounts = Array.from(ledgerWallet.accountStore.values());
+      setLedgerAccountsLoading(true);
+      try {
+        const storedAccounts = Array.from(ledgerWallet.accountStore.values());
 
-      if (!storedAccounts.length) {
-        let index = 0;
-        let loadedAny = false;
+        if (!storedAccounts.length) {
+          let index = 0;
+          let loadedAny = false;
 
-        while (true) {
-          try {
-            const account = await ledgerWallet.getConnectedAccount(index);
-            ledgerWallet.accountStore.add(account);
-            loadedAny = true;
-            index += 1;
-          } catch (_error) {
-            if (!loadedAny) {
-              showErrorNotification('Failed to read Ledger accounts');
+          while (true) {
+            try {
+              const account = await ledgerWallet.getConnectedAccount(index);
+              ledgerWallet.accountStore.add(account);
+              loadedAny = true;
+              index += 1;
+            } catch (_error) {
+              if (!loadedAny) {
+                showErrorNotification('Failed to read Ledger accounts');
+              }
+              break;
             }
-            break;
           }
         }
-      }
 
-      const nextAccounts = Array.from(ledgerWallet.accountStore.values());
-      if (isCancelled) {
-        return;
-      }
-
-      const mappedAccounts: ReactiveDotAccount[] = [];
-
-      nextAccounts.forEach((account) => {
-        const ledgerAccount = account as {
-          publicKey?: Uint8Array;
-          name?: string;
-        };
-        const publicKey = ledgerAccount.publicKey;
-
-        if (!publicKey) {
+        const nextAccounts = Array.from(ledgerWallet.accountStore.values());
+        if (isCancelled) {
           return;
         }
 
-        mappedAccounts.push({
-          address: encodeAddress(publicKey),
-          name: ledgerAccount.name,
-          wallet: ledgerWallet,
-        });
-      });
+        const mappedAccounts: ReactiveDotAccount[] = [];
 
-      setLedgerDotAccounts(mappedAccounts);
+        nextAccounts.forEach((account) => {
+          const ledgerAccount = account as {
+            publicKey?: Uint8Array;
+            name?: string;
+          };
+          const publicKey = ledgerAccount.publicKey;
+
+          if (!publicKey) {
+            return;
+          }
+
+          mappedAccounts.push({
+            address: encodeAddress(publicKey),
+            name: ledgerAccount.name,
+            wallet: ledgerWallet,
+          });
+        });
+
+        setLedgerDotAccounts(mappedAccounts);
+      } finally {
+        if (!isCancelled) {
+          setLedgerAccountsLoading(false);
+        }
+      }
     };
 
     void loadLedgerAccounts();
 
     return () => {
       isCancelled = true;
+      setLedgerAccountsLoading(false);
     };
   }, [ledgerWallet, selectedWallet]);
 
@@ -171,6 +180,10 @@ export const useReactiveDotWallet = ({
       return;
     }
 
+    if (selectedWallet.name === 'Ledger' && ledgerAccountsLoading) {
+      return;
+    }
+
     if (!accounts.length) {
       if (shouldOpenAccountsModal.current) {
         showErrorNotification('Selected wallet has no accounts');
@@ -190,12 +203,12 @@ export const useReactiveDotWallet = ({
       return;
     }
 
-    if (!accounts.length) {
+    if (!accounts.length && !(selectedWallet?.name === 'Ledger' && ledgerAccountsLoading)) {
       closeAccountsModal();
     }
 
     setAccounts(accounts);
-  }, [accounts, apiType, setAccounts]);
+  }, [accounts, apiType, closeAccountsModal, ledgerAccountsLoading, selectedWallet, setAccounts]);
 
   useEffect(() => {
     if (apiType !== 'PAPI') {
