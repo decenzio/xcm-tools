@@ -1,5 +1,5 @@
 import { encodeAddress } from '@polkadot/keyring';
-import type { Wallet } from '@reactive-dot/core/wallets.js';
+import type { Wallet, WalletAccount } from '@reactive-dot/core/wallets.js';
 import {
   useAccounts,
   useWalletConnector,
@@ -13,13 +13,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { TApiType, TWalletAccount } from '../types';
 import { showErrorNotification } from '../utils/notifications';
-
-type ReactiveDotAccount = {
-  address: string;
-  name?: string;
-  wallet: Wallet;
-  polkadotSigner?: PolkadotSigner;
-};
 
 type UseReactiveDotWalletParams = {
   shouldOpenAccountsModal: RefObject<boolean>;
@@ -44,6 +37,9 @@ type UseReactiveDotWalletResult = {
   ) => PolkadotSigner;
 };
 
+const isLedgerWallet = (wallet: Wallet): wallet is LedgerWallet =>
+  wallet.name === 'Ledger';
+
 export const useReactiveDotWallet = ({
   shouldOpenAccountsModal,
   openAccountsModal,
@@ -55,7 +51,7 @@ export const useReactiveDotWallet = ({
   setAccounts,
 }: UseReactiveDotWalletParams): UseReactiveDotWalletResult => {
   const wallets = useWallets();
-  const dotAccounts = useAccounts({ chainId: null }) as ReactiveDotAccount[];
+  const dotAccounts = useAccounts({ chainId: null }) as WalletAccount[];
   const [_, connectWallet] = useWalletConnector();
   const [selectedWalletName, setSelectedWalletName] = useState<
     string | undefined
@@ -71,15 +67,11 @@ export const useReactiveDotWallet = ({
     [selectedWalletName, wallets],
   );
 
-  const ledgerWallet = useMemo(() => {
-    return wallets.find((wallet) => wallet.name === 'Ledger') as
-      | LedgerWallet
-      | undefined;
-  }, [wallets]);
+  const ledgerWallet = useMemo(
+    () => wallets.find(isLedgerWallet),
+    [wallets],
+  );
 
-  const [ledgerDotAccounts, setLedgerDotAccounts] = useState<
-    ReactiveDotAccount[]
-  >([]);
   const [ledgerAccountsLoaded, setLedgerAccountsLoaded] = useState(false);
 
   useEffect(() => {
@@ -119,36 +111,13 @@ export const useReactiveDotWallet = ({
           }
         }
 
-        const nextAccounts = Array.from(ledgerWallet.accountStore.values());
-        if (isCancelled) {
-          return;
-        }
-
-        const mappedAccounts: ReactiveDotAccount[] = [];
-
-        nextAccounts.forEach((account) => {
-          const ledgerAccount = account as {
-            publicKey?: Uint8Array;
-            name?: string;
-          };
-          const publicKey = ledgerAccount.publicKey;
-
-          if (!publicKey) {
-            return;
-          }
-
-          mappedAccounts.push({
-            address: encodeAddress(publicKey),
-            name: ledgerAccount.name,
-            wallet: ledgerWallet,
-          });
-        });
-
-        setLedgerDotAccounts(mappedAccounts);
-      } finally {
         if (!isCancelled) {
           setLedgerAccountsLoaded(true);
         }
+
+      } catch (error) {
+      } finally {
+        setLedgerAccountsLoaded(true);
       }
     };
 
@@ -165,10 +134,7 @@ export const useReactiveDotWallet = ({
       return [];
     }
 
-    const sourceAccounts =
-      selectedWallet.name === 'Ledger'
-        ? ledgerDotAccounts
-        : dotAccounts.filter(
+    const sourceAccounts = dotAccounts.filter(
             (account) => account.wallet.name === selectedWallet.name,
           );
 
@@ -179,7 +145,7 @@ export const useReactiveDotWallet = ({
         source: selectedWallet.name,
       },
     }));
-  }, [dotAccounts, ledgerDotAccounts, selectedWallet]);
+  }, [dotAccounts, selectedWallet]);
 
   useEffect(() => {
     if (!selectedWallet) {
@@ -191,10 +157,7 @@ export const useReactiveDotWallet = ({
     }
 
     if (!accounts.length) {
-      if (
-        shouldOpenAccountsModal.current &&
-        !(selectedWallet.name === 'Ledger' && !ledgerAccountsLoaded)
-      ) {
+      if (shouldOpenAccountsModal.current) {
         showErrorNotification('Selected wallet has no accounts');
         shouldOpenAccountsModal.current = false;
       }
@@ -272,10 +235,7 @@ export const useReactiveDotWallet = ({
   );
 
   const disconnectWallet = useCallback(() => {
-    //Prevent the modification of the accounts until the modal is closed
-    setTimeout(() => {
       setSelectedWalletName(undefined);
-    }, 200);
   }, []);
 
   const getSignerForAddress = useCallback(
