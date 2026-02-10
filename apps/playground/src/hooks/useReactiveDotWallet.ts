@@ -51,7 +51,7 @@ export const useReactiveDotWallet = ({
   setAccounts,
 }: UseReactiveDotWalletParams): UseReactiveDotWalletResult => {
   const wallets = useWallets();
-  const dotAccounts = useAccounts({ chainId: null }) as WalletAccount[];
+  const dotAccounts = useAccounts({ chainId: null });
   const [_, connectWallet] = useWalletConnector();
   const [selectedWalletName, setSelectedWalletName] = useState<
     string | undefined
@@ -67,10 +67,7 @@ export const useReactiveDotWallet = ({
     [selectedWalletName, wallets],
   );
 
-  const ledgerWallet = useMemo(
-    () => wallets.find(isLedgerWallet),
-    [wallets],
-  );
+  const ledgerWallet = useMemo(() => wallets.find(isLedgerWallet), [wallets]);
 
   const [ledgerAccountsLoaded, setLedgerAccountsLoaded] = useState(false);
 
@@ -92,7 +89,7 @@ export const useReactiveDotWallet = ({
       setLedgerAccountsLoaded(false);
       try {
         const storedAccounts = Array.from(ledgerWallet.accountStore.values());
-        console.log("Read stored accounts", storedAccounts);
+        console.log('Read stored accounts', storedAccounts);
 
         if (!storedAccounts.length) {
           let index = 0;
@@ -117,7 +114,6 @@ export const useReactiveDotWallet = ({
         if (!isCancelled) {
           setLedgerAccountsLoaded(true);
         }
-
       } catch (error) {
       } finally {
         setLedgerAccountsLoaded(true);
@@ -125,7 +121,7 @@ export const useReactiveDotWallet = ({
     };
 
     void loadLedgerAccounts();
-    console.log("Ledger accounts loaded", ledgerAccountsLoaded);
+    console.log('Ledger accounts loaded', ledgerAccountsLoaded);
 
     return () => {
       isCancelled = true;
@@ -138,12 +134,12 @@ export const useReactiveDotWallet = ({
       return [];
     }
 
-    console.log("Dot accounts", dotAccounts);
+    console.log('Dot accounts', dotAccounts);
 
     const sourceAccounts = dotAccounts.filter(
-            (account) => account.wallet.name === selectedWallet.name,
-          );
-    console.log("Source accounts", sourceAccounts);
+      (account) => account.wallet.name === selectedWallet.name,
+    );
+    console.log('Source accounts', sourceAccounts);
 
     return sourceAccounts.map((account) => ({
       address: account.address,
@@ -155,7 +151,7 @@ export const useReactiveDotWallet = ({
   }, [dotAccounts, selectedWallet]);
 
   useEffect(() => {
-    console.log("Ledger accounts loaded - wallet effect", ledgerAccountsLoaded);
+    console.log('Ledger accounts loaded - wallet effect', ledgerAccountsLoaded);
 
     if (!selectedWallet) {
       return;
@@ -165,7 +161,7 @@ export const useReactiveDotWallet = ({
       return;
     }
 
-    console.log("Accounts in wallet effect", accounts);
+    console.log('Accounts in wallet effect', accounts);
 
     if (!accounts.length) {
       if (shouldOpenAccountsModal.current) {
@@ -199,7 +195,7 @@ export const useReactiveDotWallet = ({
       closeAccountsModal();
     }
 
-    console.log("Setting accounts", accounts);
+    console.log('Setting accounts', accounts);
 
     setAccounts(accounts);
   }, [
@@ -224,7 +220,7 @@ export const useReactiveDotWallet = ({
       (item) => item.address === savedAddressRef.current,
     );
 
-    console.log("Account found - selectAccount effect", account);
+    console.log('Account found - selectAccount effect', account);
 
     if (!account) {
       return;
@@ -242,7 +238,7 @@ export const useReactiveDotWallet = ({
         return false;
       }
 
-      console.log("Connecting to wallet", wallet);
+      console.log('Connecting to wallet', wallet);
 
       await connectWallet(wallet);
       setSelectedWalletName(wallet.name);
@@ -252,7 +248,7 @@ export const useReactiveDotWallet = ({
   );
 
   const disconnectWallet = useCallback(() => {
-      setSelectedWalletName(undefined);
+    setSelectedWalletName(undefined);
   }, []);
 
   const getSignerForAddress = useCallback(
