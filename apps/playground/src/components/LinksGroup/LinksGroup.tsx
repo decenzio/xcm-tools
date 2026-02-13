@@ -7,6 +7,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import type { IconProps } from '@tabler/icons-react';
 import { IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { FC } from 'react';
@@ -17,14 +18,12 @@ import type { TNavItem } from '../../types';
 import classes from './LinksGroup.module.css';
 
 type Props = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: React.FC<any>;
+  icon: React.FC<IconProps>;
   label: string;
   initiallyOpened?: boolean;
-  url?: string;
+  url: string;
   links?: TNavItem[];
   collapsed?: boolean;
-  forceActiveWhenCollapsed?: boolean;
 };
 
 export const LinksGroup: FC<Props> = ({
@@ -51,8 +50,7 @@ export const LinksGroup: FC<Props> = ({
       renderRoot={({ className, ...others }) => (
         <NavLink
           className={({ isActive }) =>
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            cx(className, { 'active-link': isActive })
+            cx(className as string, { 'active-link': isActive })
           }
           to={url}
           {...others}
@@ -78,8 +76,7 @@ export const LinksGroup: FC<Props> = ({
           renderRoot={({ className, ...others }) => (
             <NavLink
               className={({ isActive }) =>
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                cx(className, {
+                cx(className as string, {
                   'active-link': isLinkActive(isActive),
                 })
               }

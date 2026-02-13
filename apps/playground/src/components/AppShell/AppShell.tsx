@@ -50,13 +50,13 @@ import classes from './Navbar.module.css';
 
 const EXPANDED_NAVBAR_WIDTH = 280;
 const COLLAPSED_NAVBAR_WIDTH = 88;
-const SIDEBAR_STORAGE_KEY = 'xcm-tools:sidebar-opened';
+const SIDEBAR_STORAGE_KEY = 'sidebar-opened';
 
 export const AppShell = () => {
   const [mobileMenuOpened, { toggle: toggleMobileMenu }] = useDisclosure();
-  const [desktopMenuOpened, setDesktopMenuOpened] = useState<boolean>(() => {
-    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false';
-  });
+  const [desktopMenuOpened, setDesktopMenuOpened] = useState<boolean>(
+    localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false',
+  );
 
   const {
     connectWallet,
@@ -100,7 +100,7 @@ export const AppShell = () => {
   }, [computedColorScheme]);
 
   useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(desktopMenuOpened));
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(desktopMenuOpened));
   }, [desktopMenuOpened]);
 
   const toggleColorScheme = () => {
@@ -207,13 +207,12 @@ export const AppShell = () => {
             isSidebarCollapsed ? classes.navbarCollapsed : classes.navbar
           }
         >
-          <Group
-            className={classes.header}
-            pt="0"
-            pb="lg"
-            justify={isSidebarCollapsed ? 'center' : 'flex-start'}
-          >
-            {!isSidebarCollapsed && (
+          <Group pb="lg" justify={isSidebarCollapsed ? 'center' : 'flex-start'}>
+            {isSidebarCollapsed ? (
+              <Anchor href="https://paraspell.xyz/" target="_blank">
+                <Image src="/logo_short.png" w={32} pt="sm" />
+              </Anchor>
+            ) : (
               <Group w={160} flex={1}>
                 <Anchor href="https://paraspell.xyz/" target="_blank">
                   <Image src="/logo.png" fit="contain" px={8} pl={16} />
@@ -222,6 +221,7 @@ export const AppShell = () => {
             )}
             <Group
               gap="xs"
+              pt={isSidebarCollapsed ? 'md' : 0}
               justify={isSidebarCollapsed ? 'center' : 'flex-start'}
               style={{
                 flexDirection: isSidebarCollapsed ? 'column' : 'row',
@@ -232,9 +232,7 @@ export const AppShell = () => {
                 size="md"
                 visibleFrom="xs"
                 onClick={toggleDesktopMenu}
-                aria-label={
-                  desktopMenuOpened ? 'Collapse side menu' : 'Expand side menu'
-                }
+                aria-label="Expand / Collapse side menu"
               >
                 {isSidebarCollapsed ? (
                   <IconLayoutSidebarRightCollapseFilled size={16} />
@@ -290,7 +288,6 @@ export const AppShell = () => {
               pb="xs"
               pt="md"
               gap={isSidebarCollapsed ? 'xs' : 'lg'}
-              justify={isSidebarCollapsed ? 'center' : 'space-between'}
               align="center"
               className={
                 isSidebarCollapsed ? classes.socialsCollapsed : classes.socials
