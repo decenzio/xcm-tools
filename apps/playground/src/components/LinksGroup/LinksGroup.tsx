@@ -40,7 +40,6 @@ export const LinksGroup: FC<Props> = ({
   const hasLinks = Array.isArray(links);
   const [opened, setOpened] = useState(initiallyOpened || false);
   const displayChildren = hasLinks && !collapsed;
-  const collapsedTargetUrl = collapsed ? (url ?? links?.[0]?.url) : url;
   const isChildRouteActive = hasLinks
     ? links.some((linkItem) => linkItem.url === pathname)
     : false;
@@ -81,13 +80,13 @@ export const LinksGroup: FC<Props> = ({
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 cx(className, {
                   'active-link':
-                    (isActive && collapsedTargetUrl && !hasLinks) ||
+                    (isActive && url && !hasLinks) ||
                     (collapsed &&
                       forceActiveWhenCollapsed &&
                       (isActive || isChildRouteActive)),
                 })
               }
-              to={collapsedTargetUrl}
+              to={url}
               {...others}
             />
           )}
