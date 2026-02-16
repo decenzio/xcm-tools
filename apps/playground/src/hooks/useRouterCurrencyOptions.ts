@@ -1,4 +1,4 @@
-import { isRelayChain, type TAssetInfo, type TChain } from '@paraspell/sdk';
+import { isRelayChain, TLocation, type TAssetInfo, type TChain } from '@paraspell/sdk';
 import type { TExchangeInput, TRouterAsset } from '@paraspell/xcm-router';
 import { getExchangePairs } from '@paraspell/xcm-router';
 import {
@@ -7,7 +7,11 @@ import {
 } from '@paraspell/xcm-router';
 import { useMemo } from 'react';
 
-const assetKeys = (asset: TAssetInfo): string[] => {
+const getLabel = (asset: TAssetInfo) => {
+  return `${asset.symbol} - ${'assetId' in asset ? asset.assetId : 'Location'}`;
+};
+
+const assetKeys = (asset: { location: TLocation }): string[] => {
   const keys: string[] = [];
   keys.push(JSON.stringify(asset.location));
   return keys;
@@ -15,9 +19,6 @@ const assetKeys = (asset: TAssetInfo): string[] => {
 
 const getAssetKey = (asset: TAssetInfo) =>
   `${asset.symbol ?? 'NO_SYMBOL'}-${!asset.isNative ? (asset.assetId ?? 'NO-ID') : 'NO_ID'}`;
-
-const getAssetLabel = (asset: TAssetInfo) =>
-  `${asset.symbol ?? 'NO_SYMBOL'} - ${!asset.isNative ? (asset.assetId ?? 'Location') : 'Native'}`;
 
 export const useRouterCurrencyOptions = (
   from: TChain | undefined,
@@ -92,7 +93,7 @@ export const useRouterCurrencyOptions = (
       return [
         {
           value: key,
-          label: getAssetLabel(asset),
+          label: getLabel(asset),
         },
       ];
     });
@@ -113,7 +114,7 @@ export const useRouterCurrencyOptions = (
       return [
         {
           value: key,
-          label: getAssetLabel(asset),
+          label: getLabel(asset),
         },
       ];
     });
