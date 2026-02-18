@@ -1,5 +1,4 @@
-import { encodeAddress } from '@polkadot/keyring';
-import type { Wallet, WalletAccount } from '@reactive-dot/core/wallets.js';
+import type { Wallet } from '@reactive-dot/core/wallets.js';
 import {
   useAccounts,
   useWalletConnector,
@@ -68,7 +67,6 @@ export const useReactiveDotWallet = ({
   );
 
   const ledgerWallet = useMemo(() => wallets.find(isLedgerWallet), [wallets]);
-
   const [ledgerAccountsLoaded, setLedgerAccountsLoaded] = useState(false);
 
   useEffect(() => {
@@ -89,6 +87,7 @@ export const useReactiveDotWallet = ({
       setLedgerAccountsLoaded(false);
       try {
         const storedAccounts = Array.from(ledgerWallet.accountStore.values());
+
         console.log('Read stored accounts', storedAccounts);
 
         if (!storedAccounts.length) {
