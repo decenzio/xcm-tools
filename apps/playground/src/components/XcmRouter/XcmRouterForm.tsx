@@ -6,6 +6,7 @@ import {
   MultiSelect,
   Paper,
   rem,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -69,6 +70,7 @@ import {
   parseAsRecipientAddress,
   parseAsSubstrateChain,
 } from '../../utils/parsers';
+import { getExchange } from '../../utils/routerUtils';
 import { AccountSelectModal } from '../AccountSelectModal/AccountSelectModal';
 import { AdvancedOptions } from '../AdvancedOptions';
 import { RouterCurrencySelect } from '../common/RouterCurrencySelection';
@@ -87,6 +89,7 @@ export type TRouterFormValues = {
   to?: TChain;
   currencyFromOption: TCurrencyEntry;
   currencyToOption: TCurrencyEntry;
+  feeAssetOptionId: string;
   recipientAddress: string;
   amount: string;
   slippagePct: string;
@@ -102,6 +105,7 @@ export type TRouterFormValuesTransformed = Omit<
   exchange: TExchangeChain;
   currencyFrom: TCurrencyInput;
   currencyTo: TCurrencyInput;
+  feeAsset?: TAssetInfo;
 };
 
 type Props = {
@@ -177,6 +181,7 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
       customCurrencyType: 'id',
       customCurrencySymbolSpecifier: 'auto',
     }),
+    feeAssetOptionId: parseAsString.withDefault(''),
     amount: parseAsString.withDefault('10'),
     recipientAddress: parseAsRecipientAddress.withDefault(
       selectedAccount?.address ?? DEFAULT_ADDRESS,
@@ -235,6 +240,8 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   }, [form.values, setQueryState]);
 
   const { from, to, exchange } = form.getValues();
+  const isFeeAssetDisabled =
+    from === 'Hydration' || (!from && getExchange(exchange) === 'HydrationDex');
 
   const initEvmExtensions = () => {
     const ext = getInjectedExtensions();
@@ -298,20 +305,6 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     void selectProvider(walletName);
   };
 
-  const getExchange = (exchange: TExchangeChain[] | undefined) => {
-    if (Array.isArray(exchange)) {
-      if (exchange.length === 1) {
-        return exchange[0];
-      }
-
-      if (exchange.length === 0) {
-        return undefined;
-      }
-    }
-
-    return exchange;
-  };
-
   const { currencyFromOption, currencyToOption } = form.values;
 
   const {
@@ -319,6 +312,8 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     currencyFromMap,
     currencyToOptions,
     currencyToMap,
+    feeCurrencyOptions,
+    feeCurrencyMap,
     isFromNotParaToPara,
     isToNotParaToPara,
     adjacency,
@@ -371,11 +366,16 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     ) {
       form.setFieldValue('currencyToOption.currencyOptionId', '');
     }
+    const feeAssetOptionId = form.values.feeAssetOptionId;
+    if (feeAssetOptionId && !feeCurrencyMap[feeAssetOptionId]) {
+      form.setFieldValue('feeAssetOptionId', '');
+    }
   }, [
     currencyFromMap,
     currencyToMap,
     currencyFromOption.currencyOptionId,
     currencyToOption.currencyOptionId,
+    feeCurrencyMap,
     form,
   ]);
 
@@ -433,11 +433,16 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
       return;
     }
 
+    const feeAsset = values.feeAssetOptionId
+      ? feeCurrencyMap[values.feeAssetOptionId]
+      : undefined;
+
     const transformedValues = {
       ...values,
       exchange: getExchange(values.exchange) as TExchangeChain,
       currencyFrom,
       currencyTo,
+      feeAsset,
     };
 
     // console.log('transformedValues', transformedValues);
@@ -629,6 +634,20 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
             data-testid="select-currency-to"
             {...form.getInputProps('currencyToOptionId')}
           /> */}
+
+          <Select
+            key={`${from?.toString()}feeAsset`}
+            label="Fee asset"
+            description="Asset used to pay XCM fees (optional)"
+            placeholder="Default"
+            data={feeCurrencyOptions}
+            allowDeselect={false}
+            disabled={isFeeAssetDisabled}
+            searchable
+            clearable
+            data-testid="select-fee-asset"
+            {...form.getInputProps('feeAssetOptionId')}
+          />
 
           <TextInput
             label="Recipient address"
