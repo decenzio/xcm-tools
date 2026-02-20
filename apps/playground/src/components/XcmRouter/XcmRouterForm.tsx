@@ -14,8 +14,13 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
+import type { TCurrencyInput, TLocation } from '@paraspell/sdk';
 import {
   CHAINS,
+  Foreign,
+  ForeignAbstract,
+  Native,
+  Override,
   SUBSTRATE_CHAINS,
   type TAssetInfo,
   type TChain,
@@ -35,6 +40,7 @@ import {
 import { ethers } from 'ethers';
 import {
   parseAsBoolean,
+  parseAsJson,
   parseAsNativeArrayOf,
   parseAsString,
   useQueryStates,
@@ -67,18 +73,20 @@ import {
 import { getExchange } from '../../utils/routerUtils';
 import { AccountSelectModal } from '../AccountSelectModal/AccountSelectModal';
 import { AdvancedOptions } from '../AdvancedOptions';
+import { RouterCurrencySelect } from '../common/RouterCurrencySelection';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { AmountTooltip } from '../Tooltip';
 import { PolkadotWalletSelectModal } from '../WalletSelectModal/WalletSelectModal';
+import { CurrencyEntrySchema, type TCurrencyEntry } from '../XcmTransfer/XcmTransferForm';
 
 export type TRouterFormValues = {
   from?: TSubstrateChain;
   exchange?: TExchangeChain[];
   to?: TChain;
-  currencyFromOptionId: string;
-  currencyToOptionId: string;
   feeAssetOptionId: string;
+  currencyFromOption: TCurrencyEntry;
+  currencyToOption: TCurrencyEntry;
   recipientAddress: string;
   amount: string;
   slippagePct: string;
@@ -92,9 +100,9 @@ export type TRouterFormValuesTransformed = Omit<
   'exchange'
 > & {
   exchange: TExchangeChain;
-  currencyFrom: TAssetInfo;
-  currencyTo: TAssetInfo;
   feeAsset?: TAssetInfo;
+  currencyFrom: TCurrencyInput;
+  currencyTo: TCurrencyInput;
 };
 
 type Props = {
@@ -152,9 +160,25 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     from: parseAsSubstrateChain.withDefault('Astar'),
     exchange: parseAsNativeArrayOf(parseAsExchangeChain),
     to: parseAsChain.withDefault('Hydration'),
-    currencyFromOptionId: parseAsString.withDefault(''),
-    currencyToOptionId: parseAsString.withDefault(''),
     feeAssetOptionId: parseAsString.withDefault(''),
+    currencyFromOption: parseAsJson(CurrencyEntrySchema).withDefault({
+      currencyOptionId: '',
+      customCurrency: '',
+      amount: '10',
+      isCustomCurrency: false,
+      isMax: false,
+      customCurrencyType: 'id',
+      customCurrencySymbolSpecifier: 'auto',
+    }),
+    currencyToOption: parseAsJson(CurrencyEntrySchema).withDefault({
+      currencyOptionId: '',
+      customCurrency: '',
+      amount: '10',
+      isCustomCurrency: false,
+      isMax: false,
+      customCurrencyType: 'id',
+      customCurrencySymbolSpecifier: 'auto',
+    }),
     amount: parseAsString.withDefault('10'),
     recipientAddress: parseAsRecipientAddress.withDefault(
       selectedAccount?.address ?? DEFAULT_ADDRESS,
@@ -170,11 +194,31 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     validate: {
       recipientAddress: (value) =>
         isValidWalletAddress(value) ? null : 'Invalid address',
-      currencyFromOptionId: (value) => {
-        return value ? null : 'Currency from selection is required';
+      currencyFromOption: (value) => {
+        if (!value.isCustomCurrency) {
+          return value.currencyOptionId
+            ? null
+            : 'Currency from selection is required';
+        }
+        const asset = parseCustomAssetInfo(value);
+        if (!asset) {
+          return 'Invalid custom currency';
+        }
+        return null;
       },
-      currencyToOptionId: (value) => {
-        return value ? null : 'Currency to selection is required';
+      currencyToOption: (value) => {
+        if (!value.isCustomCurrency) {
+          return value.currencyOptionId
+            ? null
+            : 'Currency from selection is required';
+        }
+        const asset = parseCustomAssetInfo(value);
+
+        if (!asset) {
+          return 'Invalid custom currency';
+        }
+
+        return null;
       },
       exchange: (value, values) => {
         if (value === undefined && !values.from) {
@@ -262,7 +306,7 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     void selectProvider(walletName);
   };
 
-  const { currencyFromOptionId, currencyToOptionId } = form.values;
+  const { currencyFromOption, currencyToOption } = form.values;
 
   const {
     currencyFromOptions,
@@ -278,15 +322,19 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     from,
     getExchange(exchange) as TExchangeInput,
     to,
-    currencyFromOptionId,
-    currencyToOptionId,
+    currencyFromOption.currencyOptionId,
+    currencyToOption.currencyOptionId,
   );
 
   useEffect(() => {
-    if (!currencyFromOptionId || !currencyToOptionId) return;
+    if (
+      !currencyFromOption.currencyOptionId ||
+      !currencyToOption.currencyOptionId
+    )
+      return;
 
-    const fromAsset = currencyFromMap[currencyFromOptionId];
-    const toAsset = currencyToMap[currencyToOptionId];
+    const fromAsset = currencyFromMap[currencyFromOption.currencyOptionId];
+    const toAsset = currencyToMap[currencyToOption.currencyOptionId];
 
     if (!fromAsset || !toAsset) return;
 
@@ -294,11 +342,11 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     const toKey = JSON.stringify(toAsset.location);
 
     if (fromKey && toKey && !adjacency.get(fromKey)?.has(toKey)) {
-      form.setFieldValue('currencyToOptionId', '');
+      form.setFieldValue('currencyToOption.currencyOptionId', '');
     }
   }, [
-    currencyFromOptionId,
-    currencyToOptionId,
+    currencyFromOption.currencyOptionId,
+    currencyToOption.currencyOptionId,
     currencyFromMap,
     currencyToMap,
     adjacency,
@@ -306,12 +354,18 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   ]);
 
   useEffect(() => {
-    if (currencyFromOptionId && !currencyFromMap[currencyFromOptionId]) {
-      form.setFieldValue('currencyFromOptionId', '');
-      form.setFieldValue('currencyToOptionId', '');
+    if (
+      currencyFromOption.currencyOptionId &&
+      !currencyFromMap[currencyFromOption.currencyOptionId]
+    ) {
+      form.setFieldValue('currencyFromOption.currencyOptionId', '');
+      form.setFieldValue('currencyToOption.currencyOptionId', '');
     }
-    if (currencyToOptionId && !currencyToMap[currencyToOptionId]) {
-      form.setFieldValue('currencyToOptionId', '');
+    if (
+      currencyToOption.currencyOptionId &&
+      !currencyToMap[currencyToOption.currencyOptionId]
+    ) {
+      form.setFieldValue('currencyToOption.currencyOptionId', '');
     }
     const feeAssetOptionId = form.values.feeAssetOptionId;
     if (feeAssetOptionId && !feeCurrencyMap[feeAssetOptionId]) {
@@ -321,18 +375,60 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     currencyFromMap,
     currencyToMap,
     feeCurrencyMap,
-    currencyFromOptionId,
-    currencyToOptionId,
+    currencyFromOption.currencyOptionId,
+    currencyToOption.currencyOptionId,
     form,
   ]);
+
+  const parseCustomAssetInfo = (
+    entry: TCurrencyEntry,
+  ): TCurrencyInput | undefined => {
+    const value = entry.customCurrency.trim();
+    if (!value) return undefined;
+
+    switch (entry.customCurrencyType) {
+      case 'id':
+        return { id: value };
+      case 'symbol': {
+        const spec = entry.customCurrencySymbolSpecifier ?? 'auto';
+        if (spec === 'native') return { symbol: Native(value) };
+        if (spec === 'foreign') return { symbol: Foreign(value) };
+        if (spec === 'foreignAbstract')
+          return { symbol: ForeignAbstract(value) };
+        return { symbol: value }; // auto
+      }
+      case 'location':
+        return { location: JSON.parse(value) as TLocation };
+      case 'overridenLocation':
+        return { location: Override(JSON.parse(value) as TLocation) };
+      default:
+        return undefined;
+    }
+  };
+
+  const transformCurrency = (
+    entry: TCurrencyEntry,
+    currencyMap: Record<string, TAssetInfo>,
+  ) => {
+    if (entry.isCustomCurrency) {
+      return parseCustomAssetInfo(entry);
+    }
+    return currencyMap[entry.currencyOptionId];
+  };
 
   const onSubmitInternal = (
     values: TRouterFormValues,
     _event: FormEvent<HTMLFormElement> | undefined,
     submitType: TRouterSubmitType = 'default',
   ) => {
-    const currencyFrom = currencyFromMap[values.currencyFromOptionId];
-    const currencyTo = currencyToMap[values.currencyToOptionId];
+    const currencyFrom = transformCurrency(
+      values.currencyFromOption,
+      currencyFromMap,
+    );
+    const currencyTo = transformCurrency(
+      values.currencyToOption,
+      currencyToMap,
+    );
 
     if (!currencyFrom || !currencyTo) {
       return;
@@ -346,9 +442,11 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
       ...values,
       exchange: getExchange(values.exchange) as TExchangeChain,
       currencyFrom,
-      currencyTo: currencyTo,
       feeAsset,
+      currencyTo,
     };
+
+    // console.log('transformedValues', transformedValues);
 
     onSubmit(transformedValues, submitType);
   };
@@ -378,7 +476,7 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
   useEffect(() => {
     if (isFromNotParaToPara) {
       form.setFieldValue(
-        'currencyFromOptionId',
+        'currencyFromOption.currencyOptionId',
         Object.keys(currencyFromMap)[0],
       );
     }
@@ -386,7 +484,10 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
 
   useEffect(() => {
     if (isToNotParaToPara) {
-      form.setFieldValue('currencyToOptionId', Object.keys(currencyToMap)[0]);
+      form.setFieldValue(
+        'currencyToOption.currencyOptionId',
+        Object.keys(currencyToMap)[0],
+      );
     }
   }, [isToNotParaToPara, currencyToMap]);
 
@@ -395,8 +496,8 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
       form.validateField('from'),
       form.validateField('exchange'),
       form.validateField('to'),
-      form.validateField('currencyFromOptionId'),
-      form.validateField('currencyToOptionId'),
+      form.validateField('currencyFromOption'),
+      form.validateField('currencyToOption'),
       form.validateField('amount'),
     ];
     const isValid = results.every((result) => !result.hasError);
@@ -490,7 +591,21 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
             {...form.getInputProps('to')}
           />
 
-          <Select
+          <RouterCurrencySelect
+            form={form}
+            currencyOptions={currencyFromOptions}
+            path="currencyFromOption"
+            title="Currency From"
+          />
+
+          <RouterCurrencySelect
+            form={form}
+            currencyOptions={currencyToOptions}
+            path="currencyToOption"
+            title="Currency From"
+          />
+
+          {/* <Select
             key={`${from?.toString()}${exchange?.toString()}${to?.toString()}currencyFrom`}
             label="Currency From"
             placeholder="Pick value"
@@ -506,9 +621,9 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
               form.setFieldValue('currencyFromOptionId', '');
               form.setFieldValue('currencyToOptionId', '');
             }}
-          />
+          /> */}
 
-          <Select
+          {/* <Select
             key={`${from?.toString()}${exchange?.toString()}${to?.toString()}${currencyFromOptionId}currencyTo`}
             label="Currency To"
             placeholder="Pick value"
@@ -519,7 +634,7 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
             required
             data-testid="select-currency-to"
             {...form.getInputProps('currencyToOptionId')}
-          />
+          /> */}
 
           <Select
             key={`${from?.toString()}feeAsset`}
