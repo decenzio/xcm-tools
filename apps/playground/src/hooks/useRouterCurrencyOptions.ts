@@ -1,4 +1,3 @@
-import type { TLocation } from '@paraspell/sdk';
 import { isRelayChain, type TAssetInfo, type TChain } from '@paraspell/sdk';
 import type { TExchangeInput, TRouterAsset } from '@paraspell/xcm-router';
 import { getExchangePairs } from '@paraspell/xcm-router';
@@ -8,11 +7,17 @@ import {
 } from '@paraspell/xcm-router';
 import { useMemo } from 'react';
 
-const assetKeys = (asset: { location: TLocation }): string[] => {
+const assetKeys = (asset: TAssetInfo): string[] => {
   const keys: string[] = [];
   keys.push(JSON.stringify(asset.location));
   return keys;
 };
+
+const getAssetKey = (asset: TAssetInfo) =>
+  `${asset.symbol ?? 'NO_SYMBOL'}-${!asset.isNative ? (asset.assetId ?? 'NO-ID') : 'NO_ID'}`;
+
+const getAssetLabel = (asset: TAssetInfo) =>
+  `${asset.symbol ?? 'NO_SYMBOL'} - ${!asset.isNative ? (asset.assetId ?? 'Location') : 'Native'}`;
 
 export const useRouterCurrencyOptions = (
   from: TChain | undefined,
@@ -34,7 +39,7 @@ export const useRouterCurrencyOptions = (
   const currencyFromMap = useMemo(
     () =>
       supportedAssetsFrom.reduce((map: Record<string, TAssetInfo>, asset) => {
-        const key = `${asset.symbol}-${'assetId' in asset ? asset.assetId : 'NO_ID'}`;
+        const key = getAssetKey(asset);
         map[key] = asset;
         return map;
       }, {}),
@@ -44,7 +49,7 @@ export const useRouterCurrencyOptions = (
   const currencyToMap = useMemo(
     () =>
       supportedAssetsTo.reduce((map: Record<string, TRouterAsset>, asset) => {
-        const key = `${asset.symbol}-${'assetId' in asset ? asset.assetId : 'NO_ID'}`;
+        const key = getAssetKey(asset);
         map[key] = asset;
         return map;
       }, {}),
@@ -87,11 +92,11 @@ export const useRouterCurrencyOptions = (
       return [
         {
           value: key,
-          label: asset.symbol,
+          label: getAssetLabel(asset),
         },
       ];
     });
-  }, [currencyFromMap, selectedTo, selectedFrom, adjacency]);
+  }, [currencyFromMap, currencyToMap, selectedTo, selectedFrom, adjacency]);
 
   const currencyToOptions = useMemo(() => {
     return Object.keys(currencyToMap).flatMap((key) => {
@@ -108,11 +113,11 @@ export const useRouterCurrencyOptions = (
       return [
         {
           value: key,
-          label: asset.symbol,
+          label: getAssetLabel(asset),
         },
       ];
     });
-  }, [currencyToMap, selectedFrom, selectedTo, adjacency]);
+  }, [currencyToMap, currencyFromMap, selectedFrom, selectedTo, adjacency]);
 
   const isFromNotParaToPara = from && isRelayChain(from);
   const isToNotParaToPara = to && isRelayChain(to);

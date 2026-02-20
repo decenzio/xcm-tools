@@ -115,8 +115,8 @@ export const XcmRouter = () => {
       .from(from)
       .exchange(exchange)
       .to(to)
-      .currencyFrom({ location: currencyFrom.location })
-      .currencyTo({ location: currencyTo.location })
+      .currencyFrom(currencyFrom)
+      .currencyTo(currencyTo)
       .amount(amount)
       .senderAddress(senderAddress)
       .recipientAddress(recipientAddress)
@@ -142,8 +142,8 @@ export const XcmRouter = () => {
         `${API_URL}/router`,
         {
           ...formValues,
-          currencyFrom: { location: currencyFrom.location },
-          currencyTo: { location: currencyTo.location },
+          currencyFrom,
+          currencyTo,
           exchange,
           senderAddress,
           options: builderOptions,
@@ -239,8 +239,8 @@ export const XcmRouter = () => {
         result = await fetchFromApi(
           {
             ...formValues,
-            currencyFrom: { location: currencyFrom.location },
-            currencyTo: { location: currencyTo.location },
+            currencyFrom,
+            currencyTo,
             exchange,
             senderAddress: selectedAccount?.address,
             options: builderOptions,
@@ -254,8 +254,8 @@ export const XcmRouter = () => {
           .from(from)
           .exchange(exchange)
           .to(to)
-          .currencyFrom({ location: currencyFrom.location })
-          .currencyTo({ location: currencyTo.location })
+          .currencyFrom(currencyFrom)
+          .currencyTo(currencyTo)
           .amount(amount)
           .senderAddress(senderAddress)
           .recipientAddress(recipientAddress)
@@ -307,8 +307,8 @@ export const XcmRouter = () => {
         result = await fetchFromApi(
           {
             ...formValues,
-            currencyFrom: { location: currencyFrom.location },
-            currencyTo: { location: currencyTo.location },
+            currencyFrom,
+            currencyTo,
             exchange,
             senderAddress,
             options: builderOptions,
@@ -322,8 +322,8 @@ export const XcmRouter = () => {
           .from(from)
           .exchange(exchange)
           .to(to)
-          .currencyFrom({ location: currencyFrom.location })
-          .currencyTo({ location: currencyTo.location })
+          .currencyFrom(currencyFrom)
+          .currencyTo(currencyTo)
           .amount(amount)
           .senderAddress(senderAddress)
           .recipientAddress(recipientAddress)
@@ -379,8 +379,8 @@ export const XcmRouter = () => {
         result = await fetchFromApi(
           {
             ...formValues,
-            currencyFrom: { location: currencyFrom.location },
-            currencyTo: { location: currencyTo.location },
+            currencyFrom,
+            currencyTo,
             exchange,
             senderAddress,
             options: builderOptions,
@@ -394,8 +394,8 @@ export const XcmRouter = () => {
           .from(from)
           .exchange(exchange)
           .to(to)
-          .currencyFrom({ location: currencyFrom.location })
-          .currencyTo({ location: currencyTo.location })
+          .currencyFrom(currencyFrom)
+          .currencyTo(currencyTo)
           .amount(amount)
           .senderAddress(senderAddress)
           .recipientAddress(recipientAddress)
@@ -451,8 +451,8 @@ export const XcmRouter = () => {
         result = await fetchFromApi(
           {
             ...formValues,
-            currencyFrom: { location: currencyFrom.location },
-            currencyTo: { location: currencyTo.location },
+            currencyFrom,
+            currencyTo,
             exchange,
             senderAddress,
             options: builderOptions,
@@ -466,8 +466,8 @@ export const XcmRouter = () => {
           .from(from)
           .exchange(exchange)
           .to(to)
-          .currencyFrom({ location: currencyFrom.location })
-          .currencyTo({ location: currencyTo.location })
+          .currencyFrom(currencyFrom)
+          .currencyTo(currencyTo)
           .amount(amount)
           .senderAddress(senderAddress)
           .recipientAddress(recipientAddress)
@@ -509,8 +509,8 @@ export const XcmRouter = () => {
         result = await fetchFromApi(
           {
             ...formValues,
-            currencyFrom: { location: currencyFrom.location },
-            currencyTo: { location: currencyTo.location },
+            currencyFrom,
+            currencyTo,
             options: builderOptions,
           },
           '/router/best-amount-out',
@@ -522,8 +522,8 @@ export const XcmRouter = () => {
           .from(from)
           .exchange(exchange)
           .to(to)
-          .currencyFrom({ location: currencyFrom.location })
-          .currencyTo({ location: currencyTo.location })
+          .currencyFrom(currencyFrom)
+          .currencyTo(currencyTo)
           .amount(formValues.amount)
           .getBestAmountOut();
       }
