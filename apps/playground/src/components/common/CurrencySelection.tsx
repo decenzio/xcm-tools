@@ -89,7 +89,10 @@ export const CurrencySelectionBase: FC<Props> = ({
       : []),
   ];
 
-  const symbolSpecifierOptions: { label: string; value: TCustomCurrencySymbolSpecifier }[] = [
+  const symbolSpecifierOptions: {
+    label: string;
+    value: TCustomCurrencySymbolSpecifier;
+  }[] = [
     { label: 'Auto', value: 'auto' },
     { label: 'Native', value: 'native' },
     { label: 'Foreign', value: 'foreign' },
