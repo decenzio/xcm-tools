@@ -6,11 +6,8 @@ import type { FC } from 'react';
 import { useEffect } from 'react';
 
 import type { TRouterFormValues } from '../XcmRouter/XcmRouterForm';
-import type {
-  TCustomCurrencySymbolSpecifier} from './CurrencySelection';
-import {
-  CurrencySelectionBase
-} from './CurrencySelection';
+import type { TCustomCurrencySymbolSpecifier } from './CurrencySelection';
+import { CurrencySelectionBase } from './CurrencySelection';
 
 type Props = {
   form: UseFormReturnType<TRouterFormValues>;

@@ -78,7 +78,10 @@ import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { AmountTooltip } from '../Tooltip';
 import { PolkadotWalletSelectModal } from '../WalletSelectModal/WalletSelectModal';
-import { CurrencyEntrySchema, type TCurrencyEntry } from '../XcmTransfer/XcmTransferForm';
+import {
+  CurrencyEntrySchema,
+  type TCurrencyEntry,
+} from '../XcmTransfer/XcmTransferForm';
 
 export type TRouterFormValues = {
   from?: TSubstrateChain;
@@ -188,38 +191,34 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     ...advancedOptionsParsers,
   });
 
+  const createCurrencyOptionValidator = (
+    field: 'currencyFromOption' | 'currencyToOption',
+  ) => ({
+    currencyOptionId: (value: string, values: TRouterFormValues) => {
+      const currencyOption = values[field];
+      if (currencyOption.isCustomCurrency) {
+        return currencyOption.customCurrency
+          ? null
+          : 'Custom currency is required';
+      }
+      return value ? null : 'Currency selection is required';
+    },
+    customCurrency: (value: string, values: TRouterFormValues) => {
+      if (values[field].isCustomCurrency) {
+        return value ? null : 'Custom currency is required';
+      }
+      return null;
+    },
+  });
+
   const form = useForm<TRouterFormValues>({
     name: MAIN_FORM_NAME,
     initialValues: queryState,
     validate: {
       recipientAddress: (value) =>
         isValidWalletAddress(value) ? null : 'Invalid address',
-      currencyFromOption: (value) => {
-        if (!value.isCustomCurrency) {
-          return value.currencyOptionId
-            ? null
-            : 'Currency from selection is required';
-        }
-        const asset = parseCustomAssetInfo(value);
-        if (!asset) {
-          return 'Invalid custom currency';
-        }
-        return null;
-      },
-      currencyToOption: (value) => {
-        if (!value.isCustomCurrency) {
-          return value.currencyOptionId
-            ? null
-            : 'Currency from selection is required';
-        }
-        const asset = parseCustomAssetInfo(value);
-
-        if (!asset) {
-          return 'Invalid custom currency';
-        }
-
-        return null;
-      },
+      currencyFromOption: createCurrencyOptionValidator('currencyFromOption'),
+      currencyToOption: createCurrencyOptionValidator('currencyToOption'),
       exchange: (value, values) => {
         if (value === undefined && !values.from) {
           return 'Origin must be set to use Auto select';
