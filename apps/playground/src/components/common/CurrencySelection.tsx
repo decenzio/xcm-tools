@@ -80,7 +80,7 @@ export const CurrencySelectionBase: FC<Props> = ({
   onCustomCurrencyChange,
   onCustomSymbolSpecifierChange,
 }) => {
-  const customTypeOptions: { label: string; value: TCustomCurrencyType }[] = [
+  const customTypeOptions = [
     { label: 'Asset ID', value: 'id' },
     { label: 'Symbol', value: 'symbol' },
     { label: 'Location', value: 'location' },
@@ -89,10 +89,7 @@ export const CurrencySelectionBase: FC<Props> = ({
       : []),
   ];
 
-  const symbolSpecifierOptions: {
-    label: string;
-    value: TCustomCurrencySymbolSpecifier;
-  }[] = [
+  const symbolSpecifierOptions = [
     { label: 'Auto', value: 'auto' },
     { label: 'Native', value: 'native' },
     { label: 'Foreign', value: 'foreign' },
