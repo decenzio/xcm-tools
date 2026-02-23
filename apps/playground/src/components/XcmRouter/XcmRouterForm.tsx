@@ -445,8 +445,6 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
       feeAsset,
     };
 
-    // console.log('transformedValues', transformedValues);
-
     onSubmit(transformedValues, submitType);
   };
 
@@ -603,37 +601,6 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
             path="currencyToOption"
             title="Currency From"
           />
-
-          {/* <Select
-            key={`${from?.toString()}${exchange?.toString()}${to?.toString()}currencyFrom`}
-            label="Currency From"
-            placeholder="Pick value"
-            data={currencyFromOptions}
-            allowDeselect={false}
-            disabled={isFromNotParaToPara}
-            searchable
-            required
-            clearable
-            data-testid="select-currency-from"
-            {...form.getInputProps('currencyFromOptionId')}
-            onClear={() => {
-              form.setFieldValue('currencyFromOptionId', '');
-              form.setFieldValue('currencyToOptionId', '');
-            }}
-          /> */}
-
-          {/* <Select
-            key={`${from?.toString()}${exchange?.toString()}${to?.toString()}${currencyFromOptionId}currencyTo`}
-            label="Currency To"
-            placeholder="Pick value"
-            data={currencyToOptions}
-            allowDeselect={false}
-            disabled={isToNotParaToPara}
-            searchable
-            required
-            data-testid="select-currency-to"
-            {...form.getInputProps('currencyToOptionId')}
-          /> */}
 
           <Select
             key={`${from?.toString()}feeAsset`}

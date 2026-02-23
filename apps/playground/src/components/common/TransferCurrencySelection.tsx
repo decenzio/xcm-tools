@@ -69,9 +69,7 @@ export const TransferCurrencySelect: FC<Props> = ({
       onCustomCurrencyChange={(value) =>
         form.setFieldValue(`${entryPath}.customCurrency`, value)
       }
-      onCustomSymbolSpecifierChange={(
-        value: TCustomCurrencySymbolSpecifier | null,
-      ) =>
+      onCustomSymbolSpecifierChange={(value: TCustomCurrencySymbolSpecifier) =>
         form.setFieldValue(`${entryPath}.customCurrencySymbolSpecifier`, value)
       }
     />
