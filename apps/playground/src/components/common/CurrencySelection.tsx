@@ -102,7 +102,7 @@ export const CurrencySelectionBase: FC<Props> = ({
         (customCurrencyType === 'id' || customCurrencyType === 'symbol') && (
           <TextInput
             size={size}
-            label="Custom currency"
+            label={title ? `${title} - Custom` : 'Custom currency'}
             placeholder={customCurrencyType === 'id' ? 'Asset ID' : 'Symbol'}
             required
             value={customCurrency}

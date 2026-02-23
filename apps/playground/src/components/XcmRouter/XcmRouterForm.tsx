@@ -592,14 +592,14 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
             form={form}
             currencyOptions={currencyFromOptions}
             path="currencyFromOption"
-            title="Currency From"
+            title="Currency from"
           />
 
           <RouterCurrencySelect
             form={form}
             currencyOptions={currencyToOptions}
             path="currencyToOption"
-            title="Currency To"
+            title="Currency to"
           />
 
           <Select
