@@ -1,10 +1,10 @@
 import { isRelayChain, TLocation, type TAssetInfo, type TChain } from '@paraspell/sdk';
 import type { TExchangeInput, TRouterAsset } from '@paraspell/xcm-router';
-import { getExchangePairs } from '@paraspell/xcm-router';
 import {
   getSupportedAssetsFrom,
   getSupportedAssetsTo,
   getSupportedFeeAssets,
+  getExchangePairs
 } from '@paraspell/xcm-router';
 import { useMemo } from 'react';
 
