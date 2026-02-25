@@ -65,26 +65,13 @@ import {
   parseAsSubstrateChain,
 } from '../../utils/parsers';
 import { AdvancedOptions } from '../AdvancedOptions';
-import { CurrencySelection } from '../common/CurrencySelection';
 import { FeeAssetSelection } from '../common/FeeAssetSelection';
 import { KeepAliveCheckbox } from '../common/KeepAliveCheckbox';
+import { TransferCurrencySelect } from '../common/TransferCurrencySelection';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { AddressTooltip } from '../Tooltip';
-
-export type TCurrencyEntry = {
-  currencyOptionId: string;
-  customCurrency: string;
-  amount: string;
-  isCustomCurrency: boolean;
-  isMax?: boolean;
-  customCurrencyType?: 'id' | 'symbol' | 'location' | 'overridenLocation';
-  customCurrencySymbolSpecifier?:
-    | 'auto'
-    | 'native'
-    | 'foreign'
-    | 'foreignAbstract';
-};
+import type { TCurrencyEntry } from '../XcmTransfer/XcmTransferForm';
 
 export type FormValues = {
   from: TSubstrateChain;
@@ -469,7 +456,7 @@ export const XcmUtilsForm: FC<Props> = ({
               >
                 <Group>
                   <Stack gap="xs" flex={1}>
-                    <CurrencySelection
+                    <TransferCurrencySelect
                       form={form}
                       index={index}
                       currencyOptions={currencyOptions}

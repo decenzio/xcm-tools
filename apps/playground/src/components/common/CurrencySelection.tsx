@@ -8,52 +8,84 @@ import {
   Stack,
   TextInput,
 } from '@mantine/core';
-import type { UseFormReturnType } from '@mantine/form';
-import { isRelayChain } from '@paraspell/sdk';
 import type { FC } from 'react';
-import { useEffect } from 'react';
 
-import type { FormValues } from '../XcmUtils/XcmUtilsForm';
+export type TCustomCurrencyType =
+  | 'id'
+  | 'symbol'
+  | 'location'
+  | 'overridenLocation';
+
+export type TCustomCurrencySymbolSpecifier =
+  | 'auto'
+  | 'native'
+  | 'foreign'
+  | 'foreignAbstract';
+
+const isCustomCurrencyType = (value: string): value is TCustomCurrencyType =>
+  value === 'id' ||
+  value === 'symbol' ||
+  value === 'location' ||
+  value === 'overridenLocation';
+
+const isCustomCurrencySymbolSpecifier = (
+  value: string,
+): value is TCustomCurrencySymbolSpecifier =>
+  value === 'auto' ||
+  value === 'native' ||
+  value === 'foreign' ||
+  value === 'foreignAbstract';
 
 type Props = {
-  form: UseFormReturnType<FormValues>;
+  title?: string;
+  size: 'xs' | 'sm';
   currencyOptions: ComboboxItem[];
-  index: number;
+
+  selectedCurrencyOptionId: string;
+  isCustomCurrency: boolean;
+  customCurrencyType?: TCustomCurrencyType;
+  customCurrency: string;
+  customCurrencySymbolSpecifier?: TCustomCurrencySymbolSpecifier;
+
+  disableSelect: boolean;
+  showCustomControls: boolean;
+  allowOverrideLocation: boolean;
+  selectKey?: string;
+
+  onCurrencyOptionChange: (value: string | null) => void;
+  onCustomToggleChange: (checked: boolean) => void;
+  onCustomTypeChange: (value: TCustomCurrencyType) => void;
+  onCustomCurrencyChange: (value?: string) => void;
+  onCustomSymbolSpecifierChange: (
+    value: TCustomCurrencySymbolSpecifier,
+  ) => void;
 };
 
-export const CurrencySelection: FC<Props> = ({
-  form,
+export const CurrencySelectionBase: FC<Props> = ({
+  title,
+  size,
   currencyOptions,
-  index,
+  selectedCurrencyOptionId,
+  isCustomCurrency,
+  customCurrencyType,
+  customCurrency,
+  customCurrencySymbolSpecifier,
+  disableSelect,
+  showCustomControls,
+  allowOverrideLocation,
+  selectKey,
+  onCurrencyOptionChange,
+  onCustomToggleChange,
+  onCustomTypeChange,
+  onCustomCurrencyChange,
+  onCustomSymbolSpecifierChange,
 }) => {
-  const { from, to, currencies } = form.getValues();
-
-  const isCustomCurrency = currencies[index].isCustomCurrency;
-  const customCurrencyType = currencies[index].customCurrencyType;
-
-  useEffect(() => {
-    if (!customCurrencyType) return;
-    form.setFieldValue(`currencies.${index}.customCurrency`, '');
-  }, [customCurrencyType]);
-
-  const isRelayToPara = isRelayChain(from);
-  const isParaToRelay = isRelayChain(to);
-
-  const isNotParaToPara = isRelayToPara || isParaToRelay;
-
-  // If it's not para-to-para, we do not allow custom currencies
-  useEffect(() => {
-    if (isNotParaToPara) {
-      form.setFieldValue(`currencies.${index}.isCustomCurrency`, false);
-    }
-  }, [isNotParaToPara]);
-
-  const options = [
+  const customTypeOptions = [
     { label: 'Asset ID', value: 'id' },
     { label: 'Symbol', value: 'symbol' },
     { label: 'Location', value: 'location' },
-    ...(currencies.length === 1
-      ? [{ label: 'Override location', value: 'overridenLocation' }]
+    ...(allowOverrideLocation
+      ? [{ label: 'Override location', value: 'overridenLocation' as const }]
       : []),
   ];
 
@@ -64,18 +96,19 @@ export const CurrencySelection: FC<Props> = ({
     { label: 'Foreign abstract', value: 'foreignAbstract' },
   ];
 
-  const size = currencies.length > 1 ? 'xs' : 'sm';
-
   return (
     <Stack gap="xs">
       {isCustomCurrency &&
         (customCurrencyType === 'id' || customCurrencyType === 'symbol') && (
           <TextInput
             size={size}
-            label="Custom currency"
+            label={title ? `${title} - Custom` : 'Custom currency'}
             placeholder={customCurrencyType === 'id' ? 'Asset ID' : 'Symbol'}
             required
-            {...form.getInputProps(`currencies.${index}.customCurrency`)}
+            value={customCurrency}
+            onChange={(event) =>
+              onCustomCurrencyChange(event.currentTarget.value)
+            }
           />
         )}
 
@@ -86,7 +119,8 @@ export const CurrencySelection: FC<Props> = ({
           formatOnBlur
           autosize
           minRows={10}
-          {...form.getInputProps(`currencies.${index}.customCurrency`)}
+          value={customCurrency}
+          onChange={onCustomCurrencyChange}
         />
       )}
 
@@ -97,55 +131,66 @@ export const CurrencySelection: FC<Props> = ({
           formatOnBlur
           autosize
           minRows={10}
-          {...form.getInputProps(`currencies.${index}.customCurrency`)}
+          value={customCurrency}
+          onChange={onCustomCurrencyChange}
         />
       )}
 
       {!isCustomCurrency && (
         <Select
-          key={from + to}
+          key={selectKey}
           size={size}
-          label="Currency"
+          label={title ?? 'Currency'}
           placeholder="Pick value"
           data={currencyOptions}
           allowDeselect={false}
-          disabled={isRelayToPara}
+          disabled={disableSelect}
           searchable
           required
           data-testid="select-currency"
-          {...form.getInputProps(`currencies.${index}.currencyOptionId`)}
+          value={selectedCurrencyOptionId}
+          onChange={(value) => onCurrencyOptionChange(value)}
         />
       )}
 
-      {!isNotParaToPara && (
+      {showCustomControls && (
         <Group>
           <Group>
             <Checkbox
               size="xs"
               label="Select custom asset"
-              {...form.getInputProps(`currencies.${index}.isCustomCurrency`, {
-                type: 'checkbox',
-              })}
+              checked={isCustomCurrency}
+              onChange={(event) =>
+                onCustomToggleChange(event.currentTarget.checked)
+              }
             />
           </Group>
+
           <Stack gap={8}>
             {isCustomCurrency && (
               <SegmentedControl
                 size="xs"
-                data={options}
-                {...form.getInputProps(
-                  `currencies.${index}.customCurrencyType`,
-                )}
+                data={customTypeOptions}
+                value={customCurrencyType}
+                onChange={(value) => {
+                  if (isCustomCurrencyType(value)) {
+                    onCustomTypeChange(value);
+                  }
+                }}
               />
             )}
+
             {isCustomCurrency && customCurrencyType === 'symbol' && (
               <SegmentedControl
                 size="xs"
                 w="100%"
                 data={symbolSpecifierOptions}
-                {...form.getInputProps(
-                  `currencies.${index}.customCurrencySymbolSpecifier`,
-                )}
+                value={customCurrencySymbolSpecifier}
+                onChange={(value) => {
+                  if (isCustomCurrencySymbolSpecifier(value)) {
+                    onCustomSymbolSpecifierChange(value);
+                  }
+                }}
               />
             )}
           </Stack>
