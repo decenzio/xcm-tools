@@ -46,7 +46,9 @@ export const determineCurrency = ({
   customCurrencyType,
   customCurrencySymbolSpecifier,
   currency,
-}: TCurrencyEntryTransformed): TCurrencyInput => {
+}:
+  | TCurrencyEntryTransformed
+  | Omit<TCurrencyEntryTransformed, 'amount' | 'isMax'>): TCurrencyInput => {
   if (isCustomCurrency) {
     if (customCurrencyType === 'id') {
       return {

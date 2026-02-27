@@ -5,12 +5,14 @@ import { EXCHANGE_CHAINS } from '@paraspell/xcm-router';
 import { createParser } from 'nuqs';
 
 import { ASSET_CLAIM_SUPPORTED_CHAINS } from '../components/AssetClaim/AssetClaimForm';
-import type {
-  TCurrencyType,
-  TCustomCurrencySymbolSpecifier,
-} from '../components/AssetsQueries/AssetsQueriesForm';
 import { ASSET_QUERIES, PALLETS_QUERIES } from '../constants';
-import type { TAssetsQuery, TPalletsQuery } from '../types';
+import type {
+  TAssetsQuery,
+  TCurrencyType,
+  TCurrencyTypeWithoutOverriddenLocation,
+  TCustomCurrencySymbolSpecifier,
+  TPalletsQuery,
+} from '../types';
 import { isValidWalletAddress } from './validationUtils';
 
 const isValidSubstrateChain = (
@@ -54,6 +56,19 @@ const isValidAssetQuery = (value: string | null): value is TAssetsQuery => {
 const isValidPalletsQuery = (value: string | null): value is TPalletsQuery => {
   return value !== null && PALLETS_QUERIES.includes(value as TPalletsQuery);
 };
+
+export const isCustomCurrencyType = (value: string): value is TCurrencyType =>
+  ['id', 'symbol', 'location', 'overridenLocation'].includes(value);
+
+export const isCustomCurrencyTypeWithoutOverriddenLocation = (
+  value: string,
+): value is TCurrencyTypeWithoutOverriddenLocation =>
+  ['id', 'symbol', 'location'].includes(value);
+
+export const isCustomCurrencySymbolSpecifier = (
+  value: string,
+): value is TCustomCurrencySymbolSpecifier =>
+  ['auto', 'native', 'foreign', 'foreignAbstract'].includes(value);
 
 export const parseAsSubstrateChain = createParser({
   parse: (query) => {
@@ -127,11 +142,21 @@ export const parseAsRecipientAddress = createParser({
   },
 });
 
+export const parseAsCurrencyTypeWithoutOverriddenLocation = createParser({
+  parse: (query) => {
+    return query !== null &&
+      isCustomCurrencyTypeWithoutOverriddenLocation(query)
+      ? query
+      : null;
+  },
+  serialize: (value) => {
+    return value;
+  },
+});
+
 export const parseAsCurrencyType = createParser({
   parse: (query) => {
-    return query !== null && ['id', 'symbol', 'location'].includes(query)
-      ? (query as TCurrencyType)
-      : null;
+    return query !== null && isCustomCurrencyType(query) ? query : null;
   },
   serialize: (value) => {
     return value;

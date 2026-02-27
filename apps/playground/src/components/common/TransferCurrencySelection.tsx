@@ -4,12 +4,12 @@ import { isRelayChain } from '@paraspell/sdk';
 import type { FC } from 'react';
 import { useEffect } from 'react';
 
+import type {
+  TCurrencyType,
+  TCustomCurrencySymbolSpecifier,
+} from '../../types';
 import type { FormValues } from '../XcmTransfer/XcmTransferForm';
-import {
-  CurrencySelectionBase,
-  type TCustomCurrencySymbolSpecifier,
-  type TCustomCurrencyType,
-} from './CurrencySelection';
+import { CurrencySelectionBase } from './CurrencySelection';
 
 type Props = {
   form: UseFormReturnType<FormValues>;
@@ -31,11 +31,6 @@ export const TransferCurrencySelect: FC<Props> = ({
   const isRelayToPara = isRelayChain(from);
   const isParaToRelay = isRelayChain(to);
   const isNotParaToPara = isRelayToPara || isParaToRelay;
-
-  useEffect(() => {
-    if (!entry.customCurrencyType) return;
-    form.setFieldValue(`${entryPath}.customCurrency`, '');
-  }, [entry.customCurrencyType]);
 
   useEffect(() => {
     if (isNotParaToPara) {
@@ -63,7 +58,7 @@ export const TransferCurrencySelect: FC<Props> = ({
       onCustomToggleChange={(checked) =>
         form.setFieldValue(`${entryPath}.isCustomCurrency`, checked)
       }
-      onCustomTypeChange={(value: TCustomCurrencyType) =>
+      onCustomTypeChange={(value: TCurrencyType) =>
         form.setFieldValue(`${entryPath}.customCurrencyType`, value)
       }
       onCustomCurrencyChange={(value) =>

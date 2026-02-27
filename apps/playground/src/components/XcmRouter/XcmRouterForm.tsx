@@ -14,13 +14,9 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
-import type { TCurrencyInput, TLocation } from '@paraspell/sdk';
+import type { TCurrencyInput } from '@paraspell/sdk';
 import {
   CHAINS,
-  Foreign,
-  ForeignAbstract,
-  Native,
-  Override,
   SUBSTRATE_CHAINS,
   type TAssetInfo,
   type TChain,
@@ -59,10 +55,15 @@ import { useRouterCurrencyOptions, useWallet } from '../../hooks';
 import { advancedOptionsParsers } from '../../parsers';
 import type {
   TAdvancedOptions,
+  TCurrencyEntryWithoutAmount,
   TRouterSubmitType,
   TWalletAccount,
 } from '../../types';
-import { isValidWalletAddress, validateCustomEndpoint } from '../../utils';
+import {
+  determineCurrency,
+  isValidWalletAddress,
+  validateCustomEndpoint,
+} from '../../utils';
 import { showErrorNotification } from '../../utils/notifications';
 import {
   parseAsChain,
@@ -79,8 +80,8 @@ import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { AmountTooltip } from '../Tooltip';
 import { PolkadotWalletSelectModal } from '../WalletSelectModal/WalletSelectModal';
 import {
-  CurrencyEntrySchema,
-  type TCurrencyEntry,
+  CurrencyEntryWithouAmountSchema,
+  DEFAULT_CURRENCY_OPTION,
 } from '../XcmTransfer/XcmTransferForm';
 
 export type TRouterFormValues = {
@@ -88,8 +89,8 @@ export type TRouterFormValues = {
   exchange?: TExchangeChain[];
   to?: TChain;
   feeAssetOptionId: string;
-  currencyFromOption: TCurrencyEntry;
-  currencyToOption: TCurrencyEntry;
+  currencyFromOption: TCurrencyEntryWithoutAmount;
+  currencyToOption: TCurrencyEntryWithoutAmount;
   recipientAddress: string;
   amount: string;
   slippagePct: string;
@@ -164,24 +165,12 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     exchange: parseAsNativeArrayOf(parseAsExchangeChain),
     to: parseAsChain.withDefault('Hydration'),
     feeAssetOptionId: parseAsString.withDefault(''),
-    currencyFromOption: parseAsJson(CurrencyEntrySchema).withDefault({
-      currencyOptionId: '',
-      customCurrency: '',
-      amount: '10',
-      isCustomCurrency: false,
-      isMax: false,
-      customCurrencyType: 'id',
-      customCurrencySymbolSpecifier: 'auto',
-    }),
-    currencyToOption: parseAsJson(CurrencyEntrySchema).withDefault({
-      currencyOptionId: '',
-      customCurrency: '',
-      amount: '10',
-      isCustomCurrency: false,
-      isMax: false,
-      customCurrencyType: 'id',
-      customCurrencySymbolSpecifier: 'auto',
-    }),
+    currencyFromOption: parseAsJson(
+      CurrencyEntryWithouAmountSchema,
+    ).withDefault(DEFAULT_CURRENCY_OPTION),
+    currencyToOption: parseAsJson(CurrencyEntryWithouAmountSchema).withDefault(
+      DEFAULT_CURRENCY_OPTION,
+    ),
     amount: parseAsString.withDefault('10'),
     recipientAddress: parseAsRecipientAddress.withDefault(
       selectedAccount?.address ?? DEFAULT_ADDRESS,
@@ -379,40 +368,15 @@ export const XcmRouterForm: FC<Props> = ({ onSubmit, loading }) => {
     form,
   ]);
 
-  const parseCustomAssetInfo = (
-    entry: TCurrencyEntry,
-  ): TCurrencyInput | undefined => {
-    const value = entry.customCurrency.trim();
-    if (!value) return undefined;
-
-    switch (entry.customCurrencyType) {
-      case 'id':
-        return { id: value };
-      case 'symbol': {
-        const spec = entry.customCurrencySymbolSpecifier ?? 'auto';
-        if (spec === 'native') return { symbol: Native(value) };
-        if (spec === 'foreign') return { symbol: Foreign(value) };
-        if (spec === 'foreignAbstract')
-          return { symbol: ForeignAbstract(value) };
-        return { symbol: value }; // auto
-      }
-      case 'location':
-        return { location: JSON.parse(value) as TLocation };
-      case 'overridenLocation':
-        return { location: Override(JSON.parse(value) as TLocation) };
-      default:
-        return undefined;
-    }
-  };
-
   const transformCurrency = (
-    entry: TCurrencyEntry,
+    entry: TCurrencyEntryWithoutAmount,
     currencyMap: Record<string, TAssetInfo>,
   ) => {
-    if (entry.isCustomCurrency) {
-      return parseCustomAssetInfo(entry);
-    }
-    return currencyMap[entry.currencyOptionId];
+    const currency = currencyMap[entry.currencyOptionId];
+    return determineCurrency({
+      ...entry,
+      currency,
+    });
   };
 
   const onSubmitInternal = (

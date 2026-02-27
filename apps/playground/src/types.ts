@@ -92,3 +92,30 @@ export type TAdvancedOptions = {
 export type TTransactFields = {
   transactOptions: TTransactOptions<string, string | number>;
 };
+
+export type TCustomCurrencySymbolSpecifier =
+  | 'auto'
+  | 'native'
+  | 'foreign'
+  | 'foreignAbstract';
+
+export type TCurrencyType = 'id' | 'symbol' | 'location' | 'overridenLocation';
+export type TCurrencyTypeWithoutOverriddenLocation = Exclude<
+  TCurrencyType,
+  'overridenLocation'
+>;
+
+export type TCurrencyEntry = {
+  currencyOptionId: string;
+  customCurrency: string;
+  amount: string;
+  isCustomCurrency: boolean;
+  isMax?: boolean;
+  customCurrencyType?: TCurrencyType;
+  customCurrencySymbolSpecifier?: TCustomCurrencySymbolSpecifier;
+};
+
+export type TCurrencyEntryWithoutAmount = Omit<
+  TCurrencyEntry,
+  'amount' | 'isMax'
+>;

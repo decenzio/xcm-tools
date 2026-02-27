@@ -21,25 +21,21 @@ import { type FC, useEffect, useRef } from 'react';
 
 import { ASSET_QUERIES, DEFAULT_ADDRESS } from '../../constants';
 import { useWallet } from '../../hooks';
-import type { TAssetsQuery } from '../../types';
+import type {
+  TAssetsQuery,
+  TCurrencyTypeWithoutOverriddenLocation,
+  TCustomCurrencySymbolSpecifier,
+} from '../../types';
 import {
   parseAsAssetQuery,
   parseAsChain,
-  parseAsCurrencyType,
+  parseAsCurrencyTypeWithoutOverriddenLocation,
   parseAsCustomCurrencySymbolSpecifier,
   parseAsRecipientAddress,
   parseAsSubstrateChain,
 } from '../../utils/parsers';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
-
-export type TCustomCurrencySymbolSpecifier =
-  | 'auto'
-  | 'native'
-  | 'foreign'
-  | 'foreignAbstract';
-
-export type TCurrencyType = 'id' | 'symbol' | 'location';
 
 export type FormValues = {
   func: TAssetsQuery;
@@ -49,7 +45,7 @@ export type FormValues = {
   amount: string;
   address: string;
   useApi: boolean;
-  currencyType?: TCurrencyType;
+  currencyType?: TCurrencyTypeWithoutOverriddenLocation;
   customCurrencySymbolSpecifier?: TCustomCurrencySymbolSpecifier;
 };
 
@@ -71,7 +67,9 @@ export const AssetsQueriesForm: FC<Props> = ({ onSubmit, loading }) => {
     ),
     amount: parseAsString.withDefault(''),
     useApi: parseAsBoolean.withDefault(false),
-    currencyType: parseAsCurrencyType.withDefault('symbol' as TCurrencyType),
+    currencyType: parseAsCurrencyTypeWithoutOverriddenLocation.withDefault(
+      'symbol' as TCurrencyTypeWithoutOverriddenLocation,
+    ),
     customCurrencySymbolSpecifier:
       parseAsCustomCurrencySymbolSpecifier.withDefault('auto'),
   });

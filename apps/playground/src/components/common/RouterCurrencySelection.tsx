@@ -1,12 +1,11 @@
 import type { ComboboxItem } from '@mantine/core';
 import type { UseFormReturnType } from '@mantine/form';
-import type { TChain } from '@paraspell/sdk';
 import { isRelayChain } from '@paraspell/sdk';
 import type { FC } from 'react';
 import { useEffect } from 'react';
 
+import type { TCustomCurrencySymbolSpecifier } from '../../types';
 import type { TRouterFormValues } from '../XcmRouter/XcmRouterForm';
-import type { TCustomCurrencySymbolSpecifier } from './CurrencySelection';
 import { CurrencySelectionBase } from './CurrencySelection';
 
 type Props = {
@@ -25,14 +24,9 @@ export const RouterCurrencySelect: FC<Props> = ({
   const { from, to } = form.values;
   const entry = form.values[path];
 
-  const fromIsRelay = from ? isRelayChain(from as TChain) : false;
+  const fromIsRelay = from ? isRelayChain(from) : false;
   const toIsRelay = to ? isRelayChain(to) : false;
   const isNotParaToPara = fromIsRelay || toIsRelay;
-
-  useEffect(() => {
-    if (!entry.customCurrencyType) return;
-    form.setFieldValue(`${path}.customCurrency`, '');
-  }, [entry.customCurrencyType]);
 
   useEffect(() => {
     if (isNotParaToPara) {

@@ -44,7 +44,6 @@ import {
 } from 'nuqs';
 import type { FC } from 'react';
 import { useEffect } from 'react';
-import z from 'zod';
 
 import { DEFAULT_ADDRESS, MAIN_FORM_NAME } from '../../constants';
 import {
@@ -53,7 +52,11 @@ import {
   useWallet,
 } from '../../hooks';
 import { advancedOptionsParsers, transactOptionsParsers } from '../../parsers';
-import type { TAdvancedOptions, TSubmitType } from '../../types';
+import type {
+  TAdvancedOptions,
+  TCurrencyEntry,
+  TSubmitType,
+} from '../../types';
 import {
   isValidPolkadotAddress,
   validateCustomEndpoint,
@@ -71,7 +74,11 @@ import { TransferCurrencySelect } from '../common/TransferCurrencySelection';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { AddressTooltip } from '../Tooltip';
-import type { TCurrencyEntry } from '../XcmTransfer/XcmTransferForm';
+import {
+  CurrencyEntrySchema,
+  CurrencyEntryWithouAmountSchema,
+  DEFAULT_CURRENCY_OPTION,
+} from '../XcmTransfer/XcmTransferForm';
 
 export type FormValues = {
   from: TSubstrateChain;
@@ -101,25 +108,6 @@ type Props = {
   isVisible?: boolean;
 };
 
-const TCurrencyEntrySchema = z.object({
-  currencyOptionId: z.string(),
-  customCurrency: z.string(),
-  amount: z.string(),
-  isCustomCurrency: z.boolean(),
-  isMax: z.boolean().optional(),
-  customCurrencyType: z
-    .enum(['id', 'symbol', 'location', 'overridenLocation'])
-    .optional(),
-  customCurrencySymbolSpecifier: z
-    .enum(['auto', 'native', 'foreign', 'foreignAbstract'])
-    .optional(),
-});
-
-export const FeeAssetSchema = TCurrencyEntrySchema.omit({
-  amount: true,
-  isMax: true,
-});
-
 export const XcmUtilsForm: FC<Props> = ({
   onSubmit,
   loading,
@@ -139,25 +127,17 @@ export const XcmUtilsForm: FC<Props> = ({
       from: parseAsSubstrateChain.withDefault('Astar'),
       to: parseAsChain.withDefault('Hydration'),
       currencies: parseAsNativeArrayOf(
-        parseAsJson(TCurrencyEntrySchema),
+        parseAsJson(CurrencyEntrySchema),
       ).withDefault([
         {
-          currencyOptionId: '',
-          customCurrency: '',
+          ...DEFAULT_CURRENCY_OPTION,
           amount: '10',
-          isCustomCurrency: false,
           isMax: false,
-          customCurrencyType: 'id',
-          customCurrencySymbolSpecifier: 'auto',
         },
       ]),
-      feeAsset: parseAsJson(FeeAssetSchema).withDefault({
-        currencyOptionId: '',
-        customCurrency: '',
-        isCustomCurrency: false,
-        customCurrencyType: 'symbol',
-        customCurrencySymbolSpecifier: 'auto',
-      }),
+      feeAsset: parseAsJson(CurrencyEntryWithouAmountSchema).withDefault(
+        DEFAULT_CURRENCY_OPTION,
+      ),
 
       address: parseAsRecipientAddress.withDefault(
         selectedAccount?.address ?? DEFAULT_ADDRESS,

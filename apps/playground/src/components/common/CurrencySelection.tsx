@@ -10,31 +10,14 @@ import {
 } from '@mantine/core';
 import type { FC } from 'react';
 
-export type TCustomCurrencyType =
-  | 'id'
-  | 'symbol'
-  | 'location'
-  | 'overridenLocation';
-
-export type TCustomCurrencySymbolSpecifier =
-  | 'auto'
-  | 'native'
-  | 'foreign'
-  | 'foreignAbstract';
-
-const isCustomCurrencyType = (value: string): value is TCustomCurrencyType =>
-  value === 'id' ||
-  value === 'symbol' ||
-  value === 'location' ||
-  value === 'overridenLocation';
-
-const isCustomCurrencySymbolSpecifier = (
-  value: string,
-): value is TCustomCurrencySymbolSpecifier =>
-  value === 'auto' ||
-  value === 'native' ||
-  value === 'foreign' ||
-  value === 'foreignAbstract';
+import type {
+  TCurrencyType,
+  TCustomCurrencySymbolSpecifier,
+} from '../../types';
+import {
+  isCustomCurrencySymbolSpecifier,
+  isCustomCurrencyType,
+} from '../../utils/parsers';
 
 type Props = {
   title?: string;
@@ -43,7 +26,7 @@ type Props = {
 
   selectedCurrencyOptionId: string;
   isCustomCurrency: boolean;
-  customCurrencyType?: TCustomCurrencyType;
+  customCurrencyType?: TCurrencyType;
   customCurrency: string;
   customCurrencySymbolSpecifier?: TCustomCurrencySymbolSpecifier;
 
@@ -54,7 +37,7 @@ type Props = {
 
   onCurrencyOptionChange: (value: string | null) => void;
   onCustomToggleChange: (checked: boolean) => void;
-  onCustomTypeChange: (value: TCustomCurrencyType) => void;
+  onCustomTypeChange: (value: TCurrencyType) => void;
   onCustomCurrencyChange: (value?: string) => void;
   onCustomSymbolSpecifierChange: (
     value: TCustomCurrencySymbolSpecifier,
@@ -85,7 +68,7 @@ export const CurrencySelectionBase: FC<Props> = ({
     { label: 'Symbol', value: 'symbol' },
     { label: 'Location', value: 'location' },
     ...(allowOverrideLocation
-      ? [{ label: 'Override location', value: 'overridenLocation' as const }]
+      ? [{ label: 'Override location', value: 'overridenLocation' }]
       : []),
   ];
 
@@ -102,7 +85,7 @@ export const CurrencySelectionBase: FC<Props> = ({
         (customCurrencyType === 'id' || customCurrencyType === 'symbol') && (
           <TextInput
             size={size}
-            label={title ? `${title} - Custom` : 'Custom currency'}
+            label={title ?? 'Custom currency'}
             placeholder={customCurrencyType === 'id' ? 'Asset ID' : 'Symbol'}
             required
             value={customCurrency}
@@ -175,6 +158,7 @@ export const CurrencySelectionBase: FC<Props> = ({
                 onChange={(value) => {
                   if (isCustomCurrencyType(value)) {
                     onCustomTypeChange(value);
+                    onCustomCurrencyChange('');
                   }
                 }}
               />
