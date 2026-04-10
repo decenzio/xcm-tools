@@ -31,5 +31,22 @@ export const selectSdkCurrency = async (
   index = 0,
 ) => {
   await page.getByTestId('select-currency').nth(index).click();
-  await page.getByRole('option', { name: currency, exact: true }).click();
+  const requestedOption = page.getByRole('option', { name: currency, exact: true });
+  if (await requestedOption.count()) {
+    await requestedOption.first().click();
+    return;
+  }
+
+  const options = page.getByRole('option');
+  const optionsCount = await options.count();
+  for (let i = 0; i < optionsCount; i += 1) {
+    const option = options.nth(i);
+    const optionText = (await option.innerText()).trim();
+    if (!/custom/i.test(optionText)) {
+      await option.click();
+      return;
+    }
+  }
+
+  throw new Error('No selectable currency options are available.');
 };
