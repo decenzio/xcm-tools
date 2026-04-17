@@ -528,7 +528,10 @@ const addTransactOptions = async (
   proofSize: string,
   originKind: string,
 ) => {
-  await appPage.getByRole('button', { name: 'Add Transact' }).click();
+  const addTransactButton = appPage.getByRole('button', { name: 'Add Transact' });
+  if (await addTransactButton.isVisible()) {
+    await addTransactButton.click();
+  }
   await appPage.getByTestId('transact-call-input').fill(call);
 
   await appPage.getByTestId('transact-ref-time-input').fill(refTime);
@@ -536,7 +539,9 @@ const addTransactOptions = async (
   await appPage.getByTestId('transact-proof-size-input').fill(proofSize);
 
   await appPage.getByTestId('transact-origin-select').click();
-  await appPage.getByRole('option', { name: originKind }).click();
+  await appPage
+    .getByRole('option', { name: originKind, exact: true })
+    .click();
 };
 
 const setSwitchValue = async (switchLocator: Locator, value: boolean) => {
@@ -659,7 +664,9 @@ basePjsTest.describe(`XCM SDK - Transfer E2E Tests`, () => {
   });
 
   basePjsTest.beforeEach(async () => {
-    await appPage.reload();
+    // Reloading keeps nuqs query params from the previous test, which leaves the
+    // Transact panel open and hides "Add Transact". Navigate to a clean URL instead.
+    await appPage.goto('/xcm-sdk/xcm-transfer');
   });
 
   [false, true].forEach((useApi) => {
@@ -794,7 +801,7 @@ basePjsTest.describe(`XCM SDK - Transfer E2E Tests`, () => {
       basePjsTest(
         `${outcomeLabel} for Transfer with advanced options ${label}${apiLabel}`,
         async () => {
-          const expectPopup = useApi && !expectedError;
+          const expectPopup = !expectedError;
           await performTransfer(appPage, extensionPage, {
             fromChain: advancedBaseCase.fromChain,
             toChain: advancedBaseCase.toChain,

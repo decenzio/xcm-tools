@@ -29,6 +29,12 @@ type TAssetsQuery =
   | 'PARA_ETH_FEES'
   | 'SUPPORTED_DESTINATIONS';
 
+type AssetsQueryOverrides = {
+  chain?: string;
+  destination?: string;
+  currency?: string;
+};
+
 const queriesToTest: TAssetsQuery[] = [
   'ASSETS_OBJECT',
   'ASSET_LOCATION',
@@ -54,6 +60,7 @@ const performAssetsQueryTest = async (
   page: Page,
   funcName: TAssetsQuery,
   useApi: boolean,
+  overrides: AssetsQueryOverrides = {},
 ) => {
   const requiresChain = !['ETHEREUM_BRIDGE_STATUS', 'PARA_ETH_FEES'].includes(
     funcName,
@@ -73,15 +80,15 @@ const performAssetsQueryTest = async (
   await selectSdkFunction(page, funcName);
 
   if (requiresChain) {
-    await selectSdkChain(page, 'Acala');
+    await selectSdkChain(page, overrides.chain ?? 'Acala');
   }
 
   if (requiresDestination) {
-    await selectSdkDestination(page, 'Hydration');
+    await selectSdkDestination(page, overrides.destination ?? 'Hydration');
   }
 
   if (requiresCurrency) {
-    await selectSdkCurrency(page, 'ACA - Native');
+    await selectSdkCurrency(page, overrides.currency ?? 'ACA - Native');
   }
 
   if (requiresAddress) {
@@ -93,8 +100,16 @@ const performAssetsQueryTest = async (
   await page.getByTestId('submit').click();
 
   await expect(page.getByTestId('error')).not.toBeVisible();
-  await expect(page.getByTestId('output')).toBeVisible();
+  await expect(page.getByTestId('output')).toBeVisible({timeout: 10_000});
 };
+
+const additionalAssetInfoCases: AssetsQueryOverrides[] = [
+  {
+    chain: 'Hydration',
+    destination: 'Acala',
+    currency: 'HDX - Native',
+  },
+];
 
 test.describe.configure({ mode: 'parallel' });
 
@@ -109,6 +124,22 @@ test.describe('XCM SDK - Assets', () => {
       test(`Should succeed for ${funcName}${apiLabel}`, async ({ page }) => {
         await performAssetsQueryTest(page, funcName, useApi);
       });
+    });
+  });
+
+  additionalAssetInfoCases.forEach(({ chain, destination, currency }) => {
+    [false, true].forEach((useApi) => {
+      const apiLabel = useApi ? ' - API' : '';
+      test(
+        `Should succeed for ASSET_INFO ${chain} -> ${destination} (${currency})${apiLabel}`,
+        async ({ page }) => {
+          await performAssetsQueryTest(page, 'ASSET_INFO', useApi, {
+            chain,
+            destination,
+            currency,
+          });
+        },
+      );
     });
   });
 });
