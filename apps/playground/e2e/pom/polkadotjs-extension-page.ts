@@ -88,7 +88,7 @@ export class PolkadotjsExtensionPage {
       this.page.locator(
         '//div[label[contains(text(), "Password for this account")]]//input'
       )
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: 20_000 });
   }
 
   async retrieveExtensionId() {

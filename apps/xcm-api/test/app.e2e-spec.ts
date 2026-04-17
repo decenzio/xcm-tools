@@ -1536,8 +1536,8 @@ describe('XCM API (e2e)', () => {
         abstractDecimals: false,
         xcmFormatCheck: true,
         apiOverrides: {
-          Hydration: 'wss://hydration.ibp.network',
-          AssetHubPolkadot: 'wss://dot-rpc.stakeworld.io/assethub',
+          Hydration: ['wss://rpc.hydradx.cloud', 'wss://hydration.ibp.network'],
+          AssetHubPolkadot: ['wss://polkadot-asset-hub-rpc.polkadot.io', 'wss://dot-rpc.stakeworld.io/assethub'],
         },
       };
 
