@@ -145,6 +145,46 @@ export const determineFeeAsset = (
   return undefined;
 };
 
+export const buildApiPayload = (
+  formValues: TFormValuesTransformed,
+  sender: string,
+  options?: TBuilderConfig<TUrl>,
+) => {
+  const {
+    useApi,
+    currencies,
+    apiOverrides,
+    development,
+    feeAsset,
+    transformedFeeAsset,
+    abstractDecimals,
+    swapOptions,
+    ...safeFormValues
+  } = formValues;
+
+  const currencyInputs = currencies.map((c) => ({
+    ...determineCurrency(c),
+    amount: c.isMax ? 'ALL' : c.amount,
+  }));
+
+  return {
+    ...safeFormValues,
+    ...(options !== undefined ? { options } : {}),
+    sender,
+    currency: currencyInputs.length === 1 ? currencyInputs[0] : currencyInputs,
+    feeAsset: determineFeeAsset(transformedFeeAsset),
+    ...(formValues.transformedCurrencyTo?.currencyOptionId ||
+    formValues.transformedCurrencyTo?.isCustomCurrency
+      ? {
+          swapOptions: {
+            ...formValues.swapOptions,
+            currencyTo: determineCurrency(formValues.transformedCurrencyTo),
+          },
+        }
+      : {}),
+  };
+};
+
 export const addSwapToBuilder = <
   T extends Partial<
     TTransferBaseOptionsWithSender<TPapiApi, TPapiTransaction, TPapiSigner>
@@ -210,9 +250,7 @@ export const setupBaseBuilder = (
     finalBuilder = finalBuilder.xcmVersion(xcmVersion);
   }
 
-  if (keepAlive) {
-    finalBuilder = finalBuilder.keepAlive(keepAlive);
-  }
+  finalBuilder = finalBuilder.keepAlive(keepAlive);
 
   if (pallet && method) {
     finalBuilder = finalBuilder.customPallet(pallet, method);

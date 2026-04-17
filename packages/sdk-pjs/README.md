@@ -13,9 +13,6 @@
     <a href="https://github.com/paraspell/xcm-sdk/actions">
       <img alt="build" src="https://github.com/paraspell/xcm-tools/actions/workflows/ci.yml/badge.svg" />
     </a>
-    <a href="https://snyk.io/test/github/paraspell/sdk">
-      <img alt="snyk" src="https://snyk.io/test/github/paraspell/sdk/badge.svg" />
-    </a>
   </p>
   <p>Supporting every XCM Active Parachain <a href = "https://paraspell.github.io/docs/supported.html"\>[list]</p>
   <p>SDK documentation <a href = "https://paraspell.github.io/docs/" \>[here]</p>
@@ -603,7 +600,7 @@ console.log(CHAINS)
 
 - Run unit tests using `pnpm test`
 
-- Run end-to-end tests using `pnpm test:e2e`
+- Run end-to-end tests (SDK+SWAP) using `pnpm test:e2e`
 
 - Run all core tests and checks using `pnpm runAll`
 

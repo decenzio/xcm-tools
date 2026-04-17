@@ -29,6 +29,7 @@ import type {
 import {
   addXcmVersionHeader,
   BatchMode,
+  createAssetId,
   createClientCache,
   createClientPoolHelpers,
   DEFAULT_TTL_MS,
@@ -54,21 +55,27 @@ import {
   RELAY_LOCATION,
   replaceBigInt,
   resolveChainApi,
+  RuntimeApiError,
   RuntimeApiUnavailableError,
   SubmitTransactionError,
   wrapTxBypass
 } from '@paraspell/sdk-core'
-import { withLegacy } from '@polkadot-api/legacy-provider'
-import { AccountId, Binary, createClient, FixedSizeBinary, getSs58AddressInfo } from 'polkadot-api'
-import { withPolkadotSdkCompat } from 'polkadot-api/polkadot-sdk-compat'
-import { getWsProvider } from 'polkadot-api/ws-provider'
+import type { TypedApi } from 'polkadot-api'
+import { AccountId, Binary, getSs58AddressInfo } from 'polkadot-api'
+import { toHex } from 'polkadot-api/utils'
+import { createWsClient } from 'polkadot-api/ws'
 import { isAddress, isHex } from 'viem'
 
-import { LEGACY_CHAINS } from './consts'
 import { processAssetsDepositedEvents } from './fee'
 import { transform } from './PapiXcmTransformer'
 import type { TPapiApi, TPapiSigner, TPapiTransaction } from './types'
-import { computeOriginFee, createDevSigner, deriveAddress, findFailingEvent } from './utils'
+import {
+  computeOriginFee,
+  createDevSigner,
+  deriveAddress,
+  extractDestParaId,
+  findFailingEvent
+} from './utils'
 
 const clientPool = createClientCache<TPapiApi>(
   MAX_CLIENTS,
@@ -81,13 +88,7 @@ const clientPool = createClientCache<TPapiApi>(
   EXTENSION_MS
 )
 
-const createPolkadotClient = (ws: TUrl, useLegacy: boolean): TPapiApi => {
-  const options = useLegacy ? { innerEnhancer: withLegacy() } : {}
-  const provider = getWsProvider(ws, options)
-  return createClient(useLegacy ? provider : withPolkadotSdkCompat(provider))
-}
-
-const { leaseClient, releaseClient } = createClientPoolHelpers(clientPool, createPolkadotClient)
+const { leaseClient, releaseClient } = createClientPoolHelpers(clientPool, createWsClient)
 
 const extractDryRunXcmFailureReason = (result: any): string => {
   const executionResult = result?.value?.execution_result
@@ -123,20 +124,23 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     this._ttlMs = clientTtlMs
     this._chain = chain
 
-    this._api = await resolveChainApi(this._config, chain, (wsUrl, c) =>
-      this.createApiInstance(wsUrl, c)
-    )
+    this._api = await resolveChainApi(this._config, chain, wsUrl => leaseClient(wsUrl, this._ttlMs))
   }
 
-  createApiInstance(wsUrl: TUrl, chain: TSubstrateChain) {
-    const useLegacy = LEGACY_CHAINS.includes(chain)
-    return Promise.resolve(leaseClient(wsUrl, this._ttlMs, useLegacy))
+  _untypedApi: TypedApi<any, false> | null = null
+
+  private get untypedApi() {
+    if (!this._untypedApi) this._untypedApi = this.api.getUnsafeApi()
+    return this._untypedApi
+  }
+
+  createApiInstance(wsUrl: TUrl): Promise<TPapiApi> {
+    return Promise.resolve(createWsClient(wsUrl))
   }
 
   accountToHex(address: string, isPrefixed = true) {
     if (isHex(address)) return address
-
-    const hex = FixedSizeBinary.fromAccountId32<32>(address).asHex()
+    const hex = toHex(AccountId().enc(address))
     return isPrefixed ? hex : hex.slice(2)
   }
 
@@ -157,27 +161,27 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
 
   deserializeExtrinsics({ module, method, params }: TSerializedExtrinsics) {
     const transformedParams = transform(params)
-    return this.api.getUnsafeApi().tx[module][method](transformedParams)
+    return this.untypedApi.tx[module][method](transformedParams)
   }
 
-  async txFromHex(hex: string): Promise<TPapiTransaction> {
+  txFromHex(hex: string): Promise<TPapiTransaction> {
     const callData = Binary.fromHex(hex)
-    return this.api.getUnsafeApi().txFromCallData(callData)
+    return this.untypedApi.txFromCallData(callData)
   }
 
   queryState<T>({ module, method, params }: TSerializedStateQuery): Promise<T> {
-    return this.api.getUnsafeApi().query[module][method].getValue(...params.map(transform))
+    return this.untypedApi.query[module][method].getValue(...params.map(transform)) as Promise<T>
   }
 
   queryRuntimeApi<T>({ module, method, params }: TSerializedStateQuery): Promise<T> {
-    return this.api.getUnsafeApi().apis[module][method](...params.map(transform))
+    return this.untypedApi.apis[module][method](...params.map(transform)) as Promise<T>
   }
 
   callBatchMethod(calls: TPapiTransaction[], mode: BatchMode) {
     const method = mode === BatchMode.BATCH_ALL ? 'batch_all' : 'batch'
-    return this.api
-      .getUnsafeApi()
-      .tx.Utility[method]({ calls: calls.map(({ decodedCall }) => decodedCall) })
+    return this.untypedApi.tx.Utility[method]({
+      calls: calls.map(({ decodedCall }) => decodedCall)
+    })
   }
 
   callDispatchAsMethod({ decodedCall }: TPapiTransaction, address: string) {
@@ -188,20 +192,18 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
         value: address
       }
     }
-    return this.api.getUnsafeApi().tx.Utility.dispatch_as({ as_origin: origin, call: decodedCall })
+    return this.untypedApi.tx.Utility.dispatch_as({ as_origin: origin, call: decodedCall })
   }
 
   async objectToHex(obj: unknown, _typeName: string, version: Version) {
     const transformedObj = transform(obj)
 
-    const tx = this.api.getUnsafeApi().tx.PolkadotXcm.send({
+    const tx = this.untypedApi.tx.PolkadotXcm.send({
       dest: {
         type: version,
         value: {
           parents: Parents.ZERO,
-          interior: {
-            type: 'Here'
-          }
+          interior: { type: 'Here' }
         }
       },
       message: transformedObj
@@ -210,15 +212,15 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     const removeFirst5Bytes = (hexString: string) => '0x' + hexString.slice(12)
 
     const encodedData = await tx.getEncodedData()
-    return removeFirst5Bytes(encodedData.asHex())
+    return removeFirst5Bytes(toHex(encodedData))
   }
 
   hexToUint8a(hex: string) {
-    return Binary.fromHex(hex).asBytes()
+    return Binary.fromHex(hex)
   }
 
   stringToUint8a(str: string) {
-    return Binary.fromText(str).asBytes()
+    return Binary.fromText(str)
   }
 
   blake2AsHex(data: Uint8Array) {
@@ -227,7 +229,7 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
 
   async hasMethod(pallet: TPallet, method: string): Promise<boolean> {
     try {
-      await this.api.getUnsafeApi().tx[pallet][method]().getEncodedData()
+      await this.untypedApi.tx[pallet][method]().getEncodedData()
       return true
     } catch (e) {
       if (
@@ -268,9 +270,8 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     const transformedFromMl = transform(fromMl)
     const transformedToMl = transform(toMl)
 
-    const response = await this.api
-      .getUnsafeApi()
-      .apis.AssetConversionApi.quote_price_exact_tokens_for_tokens(
+    const response: any =
+      await this.untypedApi.apis.AssetConversionApi.quote_price_exact_tokens_for_tokens(
         transformedFromMl,
         transformedToMl,
         amountIn,
@@ -281,12 +282,7 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
   }
 
   getEvmStorage(contract: string, slot: string): Promise<string> {
-    return this.api
-      .getUnsafeApi()
-      .query.EVM.AccountStorages.getKey(
-        FixedSizeBinary.fromHex(contract),
-        FixedSizeBinary.fromHex(slot)
-      )
+    return this.untypedApi.query.EVM.AccountStorages.getKey(contract, slot)
   }
 
   async getFromRpc(module: string, method: string, key: string): Promise<string> {
@@ -316,14 +312,13 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     if (!chain.startsWith('Hydration') || feeAsset)
       return { isCustomAsset: false, asset: this.resolveDefaultFeeAsset(options) }
 
-    const assetId = await this.api
-      .getUnsafeApi()
-      .query.MultiTransactionPayment.AccountCurrencyMap.getValue(address)
+    const assetId =
+      await this.untypedApi.query.MultiTransactionPayment.AccountCurrencyMap.getValue(address)
 
     if (assetId === undefined)
       return { isCustomAsset: false, asset: this.resolveDefaultFeeAsset(options) }
 
-    return { isCustomAsset: true, asset: findAssetInfoOrThrow(chain, { id: assetId }) }
+    return { isCustomAsset: true, asset: findAssetInfoOrThrow(chain, { id: assetId as number }) }
   }
 
   async getDryRunCall(
@@ -367,13 +362,14 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
         )
       : tx
 
-    const performDryRunCall = async (includeVersion: boolean): Promise<any> => {
+    const performDryRunCall = (includeVersion: boolean): Promise<any> => {
       const callArgs: any[] = [basePayload, resolvedTx.decodedCall]
       if (includeVersion) {
         const versionNum = Number(version.charAt(1))
         callArgs.push(versionNum)
       }
-      return this.api.getUnsafeApi().apis.DryRunApi.dry_run_call(...callArgs)
+
+      return this.untypedApi.apis.DryRunApi.dry_run_call(...callArgs)
     }
 
     const getExecutionSuccessFromResult = (result: any): boolean => {
@@ -430,34 +426,24 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     }
 
     let result
-    let isSuccess
-    let failureOutputReason: TDryRunError = {
-      failureReason: ''
-    }
 
-    result = await performDryRunCall(false)
-
-    isSuccess = getExecutionSuccessFromResult(result)
-
-    if (!isSuccess) {
-      const initialFailureReason = extractFailureReasonFromResult(result)
-      failureOutputReason = initialFailureReason
-
-      if (initialFailureReason.failureReason === 'VersionedConversionFailed') {
+    try {
+      result = await performDryRunCall(false)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      if (message.includes('Incompatible runtime entry')) {
         result = await performDryRunCall(true)
-        isSuccess = getExecutionSuccessFromResult(result)
-
-        if (!isSuccess) {
-          failureOutputReason = extractFailureReasonFromResult(result)
-        } else {
-          failureOutputReason = { failureReason: '', failureSubReason: undefined }
-        }
+      } else {
+        throw e
       }
     }
+
+    const isSuccess = getExecutionSuccessFromResult(result)
 
     let resolvedFeeAsset = await this.resolveFeeAsset(options)
 
     if (!isSuccess) {
+      const failureOutputReason = extractFailureReasonFromResult(result)
       return Promise.resolve({
         success: false,
         failureReason: failureOutputReason.failureReason,
@@ -475,12 +461,7 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     const forwardedXcms =
       result.value.forwarded_xcms.length > 0 ? result.value.forwarded_xcms[0] : []
 
-    const destParaId =
-      forwardedXcms.length === 0
-        ? undefined
-        : forwardedXcms[0].value.interior.type === 'Here'
-          ? 0
-          : forwardedXcms[0].value.interior.value.value
+    const destParaId = extractDestParaId(forwardedXcms)
 
     const USE_XCM_PAYMENT_API_CHAINS: TSubstrateChain[] = ['Astar']
 
@@ -534,11 +515,18 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
   }
 
   async getXcmWeight(xcm: any): Promise<TWeight> {
-    const weightResult = await this.api
-      .getUnsafeApi()
-      .apis.XcmPaymentApi.query_xcm_weight(!xcm.type ? transform(xcm) : xcm)
+    const weightRes: any = await this.untypedApi.apis.XcmPaymentApi.query_xcm_weight(
+      !xcm.type ? transform(xcm) : xcm
+    )
 
-    const { ref_time, proof_size } = weightResult.value
+    const { success, value } = weightRes
+
+    if (!success)
+      throw new RuntimeApiError(
+        `Failed to get XCM weight for payment fee calculation. Reason: ${JSON.stringify(value)}`
+      )
+
+    const { ref_time, proof_size } = value
 
     return {
       refTime: ref_time,
@@ -553,7 +541,7 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     assetLocalizedLoc: TLocation,
     version: Version
   ): Promise<bigint> {
-    const xcmPaymentApi = this.api.getUnsafeApi().apis.XcmPaymentApi
+    const xcmPaymentApi = this.untypedApi.apis.XcmPaymentApi
 
     let usedThirdParam = false
     let deliveryFeeRes: any
@@ -566,16 +554,20 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
 
-        // Some runtimes require the 3rd arg; without it the runtime-api call can throw
-        // with a generic "Cannot read properties of undefined".
-        if (message.includes('Cannot read properties of undefined')) {
+        // Some runtimes require the 3rd arg
+        if (message.includes('Incompatible runtime entry')) {
           usedThirdParam = true
-          const transformedAssetLoc = transform(addXcmVersionHeader(assetLocalizedLoc, version))
+          const assetId = createAssetId(version, assetLocalizedLoc)
+          const transformedAssetLoc = transform(addXcmVersionHeader(assetId, version))
           deliveryFeeRes = await xcmPaymentApi.query_delivery_fees(...baseArgs, transformedAssetLoc)
         } else {
           throw e
         }
       }
+    }
+
+    if (deliveryFeeRes?.value?.type === 'Unimplemented') {
+      return 0n
     }
 
     const deliveryFeeResolved =
@@ -617,9 +609,14 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     const transformedXcm = transformXcm ? transform(localXcm) : localXcm
 
     const queryWeight = async () => {
-      const weightRes = await this.api
-        .getUnsafeApi()
-        .apis.XcmPaymentApi.query_xcm_weight(transformedXcm)
+      const weightRes: any =
+        await this.untypedApi.apis.XcmPaymentApi.query_xcm_weight(transformedXcm)
+
+      if (!weightRes.success)
+        throw new RuntimeApiError(
+          `Failed to get XCM weight for payment fee calculation. Reason: ${JSON.stringify(weightRes.value)}`
+        )
+
       return weightRes.value
     }
 
@@ -629,14 +626,15 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
 
     const assetLocalizedLoc = localizeLocation(chain, asset.location)
 
-    const transformedAssetLoc = transform(assetLocalizedLoc)
+    const assetId = createAssetId(version, assetLocalizedLoc)
+    const versionedAssetId = addXcmVersionHeader(assetId, version)
 
-    const execFeeRes = await this.api
-      .getUnsafeApi()
-      .apis.XcmPaymentApi.query_weight_to_asset_fee(weight, {
-        type: version,
-        value: transformedAssetLoc
-      })
+    const transformedAssetLoc = transform(versionedAssetId)
+
+    const execFeeRes: any = await this.untypedApi.apis.XcmPaymentApi.query_weight_to_asset_fee(
+      weight,
+      transformedAssetLoc
+    )
 
     let execFee = typeof execFeeRes?.value === 'bigint' ? execFeeRes.value : 0n
 
@@ -669,9 +667,8 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
     asset: TAssetInfo,
     version: Version
   ): Promise<bigint | undefined> {
-    const fallbackExecFeeRes = await this.api
-      .getUnsafeApi()
-      .apis.XcmPaymentApi.query_weight_to_asset_fee(weightValue, {
+    const fallbackExecFeeRes: any =
+      await this.untypedApi.apis.XcmPaymentApi.query_weight_to_asset_fee(weightValue, {
         type: version,
         value: transform(RELAY_LOCATION)
       })
@@ -721,32 +718,28 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
 
     const transformedOriginLocation = transform(originLocation)
 
-    const result = await this.api
-      .getUnsafeApi()
-      .apis.DryRunApi.dry_run_xcm(transformedOriginLocation, xcm)
+    const result: any = await this.untypedApi.apis.DryRunApi.dry_run_xcm(
+      transformedOriginLocation,
+      xcm
+    )
 
     const isSuccess = result.success && result.value.execution_result.type === 'Complete'
     if (!isSuccess) {
       const failureReason = extractDryRunXcmFailureReason(result)
-
       return { success: false, failureReason, asset }
     }
 
-    const actualWeight = result.value.execution_result.value.used
+    const execResult = result.value.execution_result
 
-    const weight: TWeight | undefined = actualWeight
-      ? { refTime: actualWeight.ref_time, proofSize: actualWeight.proof_size }
-      : undefined
+    const weight: TWeight | undefined =
+      execResult.type === 'Complete'
+        ? { refTime: execResult.value.used.ref_time, proofSize: execResult.value.used.proof_size }
+        : undefined
 
     const forwardedXcms =
       result.value.forwarded_xcms.length > 0 ? result.value.forwarded_xcms[0] : []
 
-    const destParaId =
-      forwardedXcms.length === 0
-        ? undefined
-        : forwardedXcms[0].value.interior.type === 'Here'
-          ? 0
-          : forwardedXcms[0].value.interior.value.value
+    const destParaId = extractDestParaId(forwardedXcms)
 
     if (hasXcmPaymentApiSupport(chain) && asset) {
       const fee = await this.getXcmPaymentApiFee(chain, xcm, forwardedXcms, asset, version)
@@ -782,7 +775,9 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
           )
         : undefined) ??
       (isFeeAsset
-        ? [...emitted].find(event => event.type === 'Tokens' && event.value.type === 'Deposited')
+        ? [...emitted].find(
+            event => (event.type as string) === 'Tokens' && event.value.type === 'Deposited'
+          )
         : undefined)
 
     const processedAssetsAmount =
@@ -830,13 +825,12 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
       })
     }
 
-    let fee =
-      feeEvent.type === 'AssetConversion'
-        ? feeEvent.value.value.amount_in
-        : feeEvent.value.value.amount
+    const feeEventValue = feeEvent.value.value
+
+    let fee = feeEvent.type === 'AssetConversion' ? feeEventValue.amount_in : feeEventValue.amount
 
     if (feeAssetFeeEvent) {
-      fee = amount - originFee - feeEvent.value.value.amount
+      fee = amount - originFee - feeEventValue.amount
     }
 
     const processedFee =
@@ -855,10 +849,8 @@ class PapiApi extends PolkadotApi<TPapiApi, TPapiTransaction, TPapiSigner> {
   }
 
   async getBridgeStatus() {
-    const outboundOperatingMode = await this.api
-      .getUnsafeApi()
-      .query.EthereumOutboundQueue.OperatingMode.getValue()
-    return outboundOperatingMode.type
+    const mode = (await this.untypedApi.query.EthereumOutboundQueue.OperatingMode.getValue()) as any
+    return mode.type
   }
 
   disconnect(force = false) {

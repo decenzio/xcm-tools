@@ -13,9 +13,6 @@
     <a href="https://github.com/paraspell/xcm-sdk/actions">
       <img alt="build" src="https://github.com/paraspell/xcm-tools/actions/workflows/ci.yml/badge.svg" />
     </a>
-    <a href="https://snyk.io/test/github/paraspell/sdk">
-      <img alt="snyk" src="https://snyk.io/test/github/paraspell/sdk/badge.svg" />
-    </a>
   </p>
   <p>Supporting every XCM Active Parachain <a href = "https://paraspell.github.io/docs/supported.html"\>[list]</p>
   <p>SDK documentation <a href = "https://paraspell.github.io/docs/" \>[here]</p>
@@ -90,11 +87,12 @@ import * as paraspell from '@paraspell/sdk'
 > - You can now pass signer directly into sender parameter
 > - The local transfers now have additional builder parameter called keepAlive
 > - Transact is here! Find out more: https://paraspell.github.io/docs/sdk/xcmPallet.html#transact
-> 
-> **Latest news:**
 > - V12 > V13 Migration guide: https://paraspell.github.io/docs/migration/v12-to-v13.html
 > - Swap package is now available on every XCM SDK version: https://paraspell.github.io/docs/sdk/getting-started.html#install-swap-extension
+> 
+> **Latest news:**
 > - abstractDecimals is now turned on by default!
+> - PAPI V2 available from version 13.2.2 onwards!
 
 ### Sending XCM
 For full documentation on XCM Transfers head over to [official documentation](https://paraspell.github.io/docs/sdk/xcmPallet.html).
@@ -602,9 +600,7 @@ console.log(CHAINS)
 
 - Run unit tests using `pnpm test`
 
-- Run end-to-end tests using `pnpm test:e2e`
-
-- Run swap end-to-end tests using `pnpm test:e2e:swap`
+- Run end-to-end tests (SDK+SWAP) using `pnpm test:e2e`
 
 - Run full end-to-end tests using `pnpm test:e2e:chopsticks`
 

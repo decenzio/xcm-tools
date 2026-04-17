@@ -34,7 +34,7 @@ import {
   useQueryStates,
 } from 'nuqs';
 import type { FC, FormEvent } from 'react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import {
   DEFAULT_ADDRESS,
@@ -43,9 +43,8 @@ import {
   MAIN_FORM_NAME,
 } from '../../constants';
 import {
-  useCurrencyOptions,
+  useActiveCurrencyOptions,
   useFeeCurrencyOptions,
-  useSwapCurrencyOptions,
   useWallet,
 } from '../../hooks';
 import {
@@ -70,6 +69,11 @@ import {
 import { AdvancedOptions } from '../AdvancedOptions';
 import { CurrencySelection } from '../common/CurrencySelection';
 import { KeepAliveCheckbox } from '../common/KeepAliveCheckbox';
+import { SubmitWarningAlert } from '../common/SubmitWarningAlert';
+import {
+  TransferWarningModal,
+  useTransferWarning,
+} from '../common/TransferWarningModal';
 import { XcmApiCheckbox } from '../common/XcmApiCheckbox';
 import { ParachainSelect } from '../ParachainSelect/ParachainSelect';
 import { Swap } from '../Swap/Swap';
@@ -93,6 +97,9 @@ export const XcmTransferForm: FC<Props> = ({
 }) => {
   const { connectWallet, selectedAccount, isInitialized, isLoadingExtensions } =
     useWallet();
+
+  const { warningOpened, warningOnClose, warningOnConfirm, guardTransfer } =
+    useTransferWarning();
 
   const [queryState, setQueryState] = useQueryStates({
     from: parseAsStringLiteral(SUBSTRATE_CHAINS).withDefault('Astar'),
@@ -122,7 +129,10 @@ export const XcmTransferForm: FC<Props> = ({
       return {
         ...values,
         // Use keepAlive only for local transfers
-        keepAlive: from === to && !swapOptions.currencyTo ? keepAlive : false,
+        keepAlive:
+          from === to && !swapOptions.currencyTo.currencyOptionId
+            ? keepAlive
+            : false,
       };
     },
     validate: {
@@ -174,67 +184,91 @@ export const XcmTransferForm: FC<Props> = ({
 
   const { from, to, currencies, feeAsset } = form.getValues();
 
-  const { currencyOptions, currencyMap, isNotParaToPara } = useCurrencyOptions(
+  const {
+    activeCurrencyOptions,
+    activeCurrencyMap,
+    currencyKey,
+    isNotParaToPara,
+    currencyMap,
+    swapCurrencyToMap,
+  } = useActiveCurrencyOptions(
+    form,
     from,
     to,
+    form.values.swapOptions.exchange,
   );
 
   const { currencyOptions: feeCurrencyOptions, currencyMap: feeCurrencyMap } =
     useFeeCurrencyOptions(from);
 
-  const { currencyToMap: swapCurrencyToMap } = useSwapCurrencyOptions(
-    from,
-    form.values.swapOptions.exchange,
-    to,
-  );
+  const resolveAndSubmit = useCallback(
+    (values: TFormValues, submitType: TSubmitType) => {
+      // If MAX is selected for a local transfer, convert amount to 'ALL'
+      const normalizedValues = {
+        ...values,
+        currencies: values.currencies.map((c) =>
+          c.isMax ? { ...c, amount: 'ALL' } : c,
+        ),
+      };
 
+      // Transform each currency entry
+      const transformedCurrencies = normalizedValues.currencies.map((entry) =>
+        resolveCurrencyAsset(entry, activeCurrencyMap),
+      );
+
+      const transformedFeeAsset =
+        normalizedValues.feeAsset.currencyOptionId ||
+        normalizedValues.feeAsset.isCustomCurrency
+          ? resolveCurrencyAsset(normalizedValues.feeAsset, feeCurrencyMap)
+          : undefined;
+
+      const { currencyTo } = normalizedValues.swapOptions;
+      const transformedCurrencyTo =
+        currencyTo.currencyOptionId || currencyTo.isCustomCurrency
+          ? resolveCurrencyAsset(currencyTo, swapCurrencyToMap)
+          : undefined;
+
+      const transformedValues: TFormValuesTransformed = {
+        ...normalizedValues,
+        currencies: transformedCurrencies,
+        transformedFeeAsset,
+        transformedCurrencyTo,
+      };
+
+      if (
+        submitType === 'dryRun' ||
+        submitType === 'dryRunPreview' ||
+        submitType === 'delete'
+      ) {
+        onSubmit(transformedValues, submitType);
+        return;
+      }
+
+      onSubmit(transformedValues, initialValues ? 'update' : submitType);
+    },
+    [
+      activeCurrencyMap,
+      feeCurrencyMap,
+      swapCurrencyToMap,
+      initialValues,
+      onSubmit,
+    ],
+  );
   const onSubmitInternal = (
     values: TFormValues,
     _event: FormEvent<HTMLFormElement> | undefined,
     submitType: TSubmitType = 'default',
   ) => {
-    // If MAX is selected for a local transfer, convert amount to 'ALL'
-    const normalizedValues = {
-      ...values,
-      currencies: values.currencies.map((c) =>
-        c.isMax ? { ...c, amount: 'ALL' } : c,
-      ),
-    };
-
-    // Transform each currency entry
-    const transformedCurrencies = normalizedValues.currencies.map((entry) =>
-      resolveCurrencyAsset(entry, currencyMap),
-    );
-
-    const transformedFeeAsset =
-      normalizedValues.feeAsset.currencyOptionId ||
-      normalizedValues.feeAsset.isCustomCurrency
-        ? resolveCurrencyAsset(normalizedValues.feeAsset, feeCurrencyMap)
-        : undefined;
-
-    const { currencyTo } = normalizedValues.swapOptions;
-    const transformedCurrencyTo =
-      currencyTo.currencyOptionId || currencyTo.isCustomCurrency
-        ? resolveCurrencyAsset(currencyTo, swapCurrencyToMap)
-        : undefined;
-
-    const transformedValues: TFormValuesTransformed = {
-      ...normalizedValues,
-      currencies: transformedCurrencies,
-      transformedFeeAsset,
-      transformedCurrencyTo,
-    };
-
     if (
       submitType === 'dryRun' ||
       submitType === 'dryRunPreview' ||
       submitType === 'delete'
     ) {
-      onSubmit(transformedValues, submitType);
+      resolveAndSubmit(values, submitType);
       return;
     }
 
-    onSubmit(transformedValues, initialValues ? 'update' : submitType);
+    guardTransfer(() => resolveAndSubmit(values, submitType));
   };
 
   const onSubmitInternalDryRun = () => {
@@ -319,6 +353,11 @@ export const XcmTransferForm: FC<Props> = ({
 
   return (
     <Paper p="xl" shadow="md">
+      <TransferWarningModal
+        opened={warningOpened}
+        onClose={warningOnClose}
+        onConfirm={warningOnConfirm}
+      />
       <form onSubmit={form.onSubmit(onSubmitInternal)}>
         <Stack gap="lg">
           <ParachainSelect
@@ -362,13 +401,13 @@ export const XcmTransferForm: FC<Props> = ({
                 <Group>
                   <Stack gap="xs" flex={1}>
                     <CurrencySelection
-                      key={from + to + index}
+                      key={currencyKey + index}
                       form={form}
                       fieldPath={`currencies.${index}`}
                       fieldValue={currencies[index]}
                       showOverrideLocation={currencies.length === 1}
                       size={currencies.length > 1 ? 'xs' : 'sm'}
-                      currencyOptions={currencyOptions}
+                      currencyOptions={activeCurrencyOptions}
                     />
                     <Group gap="xs" wrap="nowrap">
                       <TextInput
@@ -484,6 +523,8 @@ export const XcmTransferForm: FC<Props> = ({
           </Group>
 
           <AdvancedOptions form={form} />
+
+          <SubmitWarningAlert />
 
           {selectedAccount ? (
             <Button.Group>

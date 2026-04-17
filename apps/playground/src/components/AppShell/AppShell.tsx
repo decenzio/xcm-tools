@@ -12,7 +12,7 @@ import {
   useMantineTheme,
   useMatches,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useLocalStorage } from '@mantine/hooks';
 import {
   IconBoxSeam,
   IconBrandGithubFilled,
@@ -51,9 +51,10 @@ const SIDEBAR_STORAGE_KEY = 'sidebar-opened';
 
 export const AppShell = () => {
   const [mobileMenuOpened, { toggle: toggleMobileMenu }] = useDisclosure();
-  const [desktopMenuOpened, setDesktopMenuOpened] = useState<boolean>(
-    localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false',
-  );
+  const [desktopMenuOpened, setDesktopMenuOpened] = useLocalStorage<boolean>({
+    key: SIDEBAR_STORAGE_KEY,
+    defaultValue: true,
+  });
 
   const {
     connectWallet,
@@ -94,10 +95,6 @@ export const AppShell = () => {
       document.head.removeChild(link);
     };
   }, [computedColorScheme]);
-
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(desktopMenuOpened));
-  }, [desktopMenuOpened]);
 
   const toggleColorScheme = () => {
     setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark');
@@ -213,7 +210,7 @@ export const AppShell = () => {
               }}
             >
               <ActionIcon
-                variant="light"
+                variant="subtle"
                 size="md"
                 visibleFrom="xs"
                 onClick={toggleDesktopMenu}
@@ -225,7 +222,11 @@ export const AppShell = () => {
                   <IconLayoutSidebarLeftCollapse size={16} />
                 )}
               </ActionIcon>
-              <ActionIcon variant="light" size="md" onClick={toggleColorScheme}>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                onClick={toggleColorScheme}
+              >
                 {computedColorScheme === 'dark' ? (
                   <IconBrightnessDown size={22} />
                 ) : (

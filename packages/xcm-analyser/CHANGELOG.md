@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.7](https://github.com/paraspell/xcm-tools/compare/xcm-analyser-v3.0.6...xcm-analyser-v3.0.7) (2026-04-16)
+
+
+### Documentation
+
+* Remove snyk ([c9385d3](https://github.com/paraspell/xcm-tools/commit/c9385d3c88b72d9fc333a4a6b13cd29d46b804d3))
+
+## [3.0.6](https://github.com/paraspell/xcm-tools/compare/xcm-analyser-v3.0.5...xcm-analyser-v3.0.6) (2026-04-02)
+
+
+### Build System
+
+* Perform a monthly check 🪄 ([e33f659](https://github.com/paraspell/xcm-tools/commit/e33f659683b48702e7b3d3a9fae4b4fa75f09b93))
+* Update to TypeScript v6 📦 ([0ecad63](https://github.com/paraspell/xcm-tools/commit/0ecad63ab0c39484572232bd33f7fbc0f3409de2))
+
 ## [3.0.5](https://github.com/paraspell/xcm-tools/compare/xcm-analyser-v3.0.4...xcm-analyser-v3.0.5) (2026-03-17)
 
 

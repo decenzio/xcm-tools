@@ -18,6 +18,7 @@ import type {
   TPaymentInfo,
   TSender,
   TSerializedExtrinsics,
+  TSerializedRuntimeApiQuery,
   TSerializedStateQuery,
   TSubstrateChain,
   TUrl,
@@ -27,6 +28,7 @@ import type {
 import {
   addXcmVersionHeader,
   BatchMode,
+  createAssetId,
   createClientCache,
   createClientPoolHelpers,
   DEFAULT_TTL_MS,
@@ -42,6 +44,7 @@ import {
   isSenderSigner,
   localizeLocation,
   MAX_CLIENTS,
+  normalizeLocation,
   PolkadotApi,
   RELAY_LOCATION,
   resolveChainApi,
@@ -89,13 +92,11 @@ class PolkadotJsApi extends PolkadotApi<TPjsApi, Extrinsic, TPjsSigner> {
     this._ttlMs = clientTtlMs
     this._chain = chain
 
-    this._api = await resolveChainApi(this._config, chain, (wsUrl, c) =>
-      this.createApiInstance(wsUrl, c)
-    )
+    this._api = await resolveChainApi(this._config, chain, wsUrl => leaseClient(wsUrl, this._ttlMs))
   }
 
   createApiInstance(wsUrl: TUrl, _chain: TSubstrateChain) {
-    return leaseClient(wsUrl, this._ttlMs, false)
+    return leaseClient(wsUrl, this._ttlMs)
   }
 
   accountToHex(address: string, isPrefixed = true) {
@@ -108,20 +109,29 @@ class PolkadotJsApi extends PolkadotApi<TPjsApi, Extrinsic, TPjsSigner> {
     return decodeAddress(address)
   }
 
-  private convertToPjsCall<T extends TSerializedExtrinsics | TSerializedStateQuery>({
-    module,
-    method
-  }: T) {
+  private convertToPjsTxCall<
+    T extends TSerializedExtrinsics | TSerializedStateQuery | TSerializedRuntimeApiQuery
+  >({ module, method }: T) {
     return {
       module: lowercaseFirstLetter(module),
       method: snakeToCamel(method)
     }
   }
 
+  private convertToPjsStateQuery<T extends TSerializedExtrinsics | TSerializedStateQuery>({
+    module,
+    method
+  }: T) {
+    return {
+      module: lowercaseFirstLetter(module),
+      method: lowercaseFirstLetter(method)
+    }
+  }
+
   deserializeExtrinsics(serialized: TSerializedExtrinsics) {
     const { params } = serialized
     const values = Object.values(params)
-    const { module, method } = this.convertToPjsCall(serialized)
+    const { module, method } = this.convertToPjsTxCall(serialized)
     return this.api.tx[module][method](...values)
   }
 
@@ -131,15 +141,16 @@ class PolkadotJsApi extends PolkadotApi<TPjsApi, Extrinsic, TPjsSigner> {
 
   async queryState<T>(serialized: TSerializedStateQuery): Promise<T> {
     const { params } = serialized
-    const { module, method } = this.convertToPjsCall(serialized)
+    const { module, method } = this.convertToPjsStateQuery(serialized)
     const res = await this.api.query[module][method](...params)
     return res.toJSON() as T
   }
 
-  queryRuntimeApi<T>(serialized: TSerializedStateQuery): Promise<T> {
+  async queryRuntimeApi<T>(serialized: TSerializedRuntimeApiQuery): Promise<T> {
     const { params } = serialized
-    const { module, method } = this.convertToPjsCall(serialized)
-    return this.api.call[module][method](...params)
+    const { module, method } = this.convertToPjsTxCall(serialized)
+    const res = await this.api.call[module][method](...params)
+    return res.toJSON() as T
   }
 
   callBatchMethod(calls: Extrinsic[], mode: BatchMode) {
@@ -482,11 +493,13 @@ class PolkadotJsApi extends PolkadotApi<TPjsApi, Extrinsic, TPjsSigner> {
   ): Promise<bigint> {
     const weight = overridenWeight ?? (await this.getXcmWeight(localXcm))
 
-    const assetLocalizedLoc = localizeLocation(chain, asset.location)
+    const assetLocalizedLoc = normalizeLocation(localizeLocation(chain, asset.location), version)
+
+    const assetId = createAssetId(version, assetLocalizedLoc)
 
     const feeResult = await this.api.call.xcmPaymentApi.queryWeightToAssetFee(
       weight,
-      addXcmVersionHeader(assetLocalizedLoc, version)
+      addXcmVersionHeader(assetId, version)
     )
 
     const execFeeRes = feeResult.toJSON() as any
@@ -536,7 +549,8 @@ class PolkadotJsApi extends PolkadotApi<TPjsApi, Extrinsic, TPjsSigner> {
 
         if (message.includes('Expected 3 arguments')) {
           usedThirdParam = true
-          const versionedAssetLoc = addXcmVersionHeader(assetLocalizedLoc, version)
+          const assetId = createAssetId(version, assetLocalizedLoc)
+          const versionedAssetLoc = addXcmVersionHeader(assetId, version)
           deliveryFeeRes = await this.api.call.xcmPaymentApi.queryDeliveryFees(
             ...baseArgs,
             versionedAssetLoc

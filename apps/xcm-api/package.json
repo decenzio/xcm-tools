@@ -1,12 +1,13 @@
 {
   "name": "@paraspell/xcm-api",
-  "version": "12.10.0-rc.1",
+  "version": "13.2.2",
   "description": "",
   "author": "",
   "private": true,
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "compile": "tsc --noEmit",
     "build": "prisma generate && nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -53,7 +54,7 @@
     "mixpanel": "^0.20.0",
     "nodemailer": "^8.0.4",
     "pg": "^8.20.0",
-    "polkadot-api": "^1.23.3",
+    "polkadot-api": "^2.0.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "ua-parser-js": "^2.0.9",

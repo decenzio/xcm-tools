@@ -16,6 +16,7 @@ import {
 import { getMythosOriginFee } from '../../utils/fees/getMythosOriginFee'
 import { createOriginLocation } from '../fees/getDestXcmFee'
 import { resolveHopAsset } from '../utils'
+import { inferFeeAsset } from '../utils/inferFeeAsset'
 import { resolveFeeAsset } from '../utils/resolveFeeAsset'
 import { getFailureInfo } from './getFailureInfo'
 import { addEthereumBridgeFees, traverseXcmHops } from './traverseXcmHops'
@@ -37,11 +38,11 @@ export const dryRunInternal = async <TApi, TRes, TSigner>(
     useRootOrigin = false
   } = options
 
+  const asset = findAssetInfoOrThrow(origin, currency, destination)
+
   const resolvedFeeAsset = feeAsset
     ? resolveFeeAsset(feeAsset, origin, destination, currency)
     : undefined
-
-  const asset = findAssetInfoOrThrow(origin, currency, destination)
 
   const amount = abstractDecimals(
     (currency as WithAmount<TCurrencyCore>).amount,
@@ -96,10 +97,11 @@ export const dryRunInternal = async <TApi, TRes, TSigner>(
       currentOrigin,
       currentAsset,
       forwardedXcms,
-      hasPassedExchange
+      hasPassedExchange,
+      isDestination
     } = params
 
-    const hopAsset = resolveHopAsset({
+    const resolvedHopAsset = resolveHopAsset({
       api,
       tx,
       originChain: origin,
@@ -111,6 +113,10 @@ export const dryRunInternal = async <TApi, TRes, TSigner>(
       hasPassedExchange
     })
 
+    const hopAsset = isDestination
+      ? (inferFeeAsset(origin, destination, asset) ?? resolvedHopAsset)
+      : resolvedHopAsset
+
     if (!hasDryRunSupport(currentChain)) {
       return {
         success: false,
@@ -121,7 +127,7 @@ export const dryRunInternal = async <TApi, TRes, TSigner>(
 
     const hopDryRun = await hopApi.getDryRunXcm({
       originLocation: addXcmVersionHeader(
-        createOriginLocation(currentOrigin, currentChain),
+        createOriginLocation(currentOrigin, currentChain, resolvedVersion),
         resolvedVersion
       ),
       tx,
