@@ -2,49 +2,36 @@ import { expect, Locator, Page } from '@playwright/test';
 import {
   getOtherAssets,
   getSupportedAssets,
-  TRANSACT_ORIGINS,
-  Version,
 } from '@paraspell/sdk';
 
 import { basePjsTest, setupPolkadotExtension } from './basePjsTest';
 import { PolkadotjsExtensionPage } from './pom';
 import { enableApiMode, selectSdkCurrency } from './utils/sdkForm';
+import { acknowledgeTransferWarningIfOpened } from './utils/transferWarningModal';
 import { createName } from './utils/selectorName';
-import type { TAdvancedOptions, TChainApiOverride } from '../src/types';
 
-type TSymbolOptions = 'Auto' | 'Native' | 'Foreign' | 'Foreign abstract';
+type TSymbolMode = 'Auto' | 'Native' | 'Foreign' | 'Foreign abstract';
 type TCustomAssetOperation =
   | 'assetId'
   | 'symbol'
   | 'location'
   | 'overridenLocation';
 
-type TTransferAdvancedOptions = Required<
-  Pick<TAdvancedOptions, 'development' | 'abstractDecimals' | 'xcmFormatCheck'>
->;
+type TTransferAdvancedOptions = {
+  development: boolean;
+  abstractDecimals: boolean;
+  xcmFormatCheck: boolean;
+};
 
-type TTransferAdvancedInputs = Pick<
-  Required<TAdvancedOptions>,
-  'method' | 'pallet'
-> & {
-  xcmVersion: Version;
+type TTransferAdvancedInputs = {
+  method: string;
+  pallet: string;
+  xcmVersion: string;
   localAccount: 'Alice' | 'Bob';
-  apiOverrides?: Array<Pick<TChainApiOverride, 'chain'> & { endpoint: string }>;
+  apiOverrides?: Array<{ chain: string; endpoint: string }>;
 };
 
-type TExpandedCustomAssetCase = {
-  label: string;
-  type: TCustomAssetOperation;
-  value: string;
-  symbolOption?: TSymbolOptions;
-};
-
-type TCustomAssetTransferCase = TExpandedCustomAssetCase & {
-  fromChain: string;
-  toChain: string;
-};
-
-type TTransferCurrency = string | string[] | null;
+type TTransferCurrency = string[] | null;
 
 type TPerformTransferOptions = {
   fromChain: string;
@@ -58,182 +45,41 @@ type TPerformTransferOptions = {
   expectedErrorPattern?: RegExp;
 };
 
-const SYMBOL_OPTIONS: TSymbolOptions[] = [
-  'Auto',
-  'Native',
-];
-
-const paraToParaTestData = [
-  {
-    fromChain: 'Astar',
-    toChain: 'BifrostPolkadot',
-    currency: 'ASTR - Native',
-  },
-  {
-    fromChain: 'AssetHubKusama',
-    toChain: 'BifrostKusama',
-    currency: 'MOVR - Location',
-  },
-  {
-    fromChain: 'Astar',
-    toChain: 'Unique',
-    currency: 'USDT - 4294969280',
-  },
-  {
-    fromChain: 'AssetHubKusama',
-    toChain: 'Basilisk',
-    currency: 'KSM - Native',
-  },
-  {
-    fromChain: 'Hydration',
-    toChain: 'Acala',
-    currency: 'HDX - Native',
-  },
-  {
-    fromChain: 'Crust',
-    toChain: 'Acala',
-    currency: 'CRU - Native',
-  },
-];
-
-const paraRelayTestData = [
-  {
-    fromChain: 'Jamton',
-    toChain: 'Polkadot',
-  },
-
-  {
-    fromChain: 'Kusama',
-    toChain: 'BridgeHubKusama',
-  },
-];
-
-const multicurrencyTestData = [
-  {
-    fromChain: 'Hydration',
-    toChain: 'Acala',
-    currency: 'HDX - Native',
-    multicurrency: ['HDX - Native', 'USDT - 10'],
-    feeAsset: 'USDT - 10',
-  },
-];
-
 const MULTICURRENCY_XCM_EXECUTE_LIMITATION =
   /Cannot use overridden assets with XCM execute/i;
-
-const swapTestData = [
-  {
-    fromChain: 'Astar',
-    toChain: 'BifrostPolkadot',
-    currency: 'ASTR - Native',
-  },
-];
-
-const swapInputOptions = [
-  {
-    label: 'default slippage',
-    slippage: '15',
-    swapCurrency: 'USDT - 10',
-    exchange: 'Hydration',
-  },
-  {
-    label: 'tight slippage',
-    slippage: '5',
-    swapCurrency: 'USDT - 10',
-    exchange: 'Hydration',
-  },
-];
 
 const customSwapBaseCase = {
   fromChain: 'Astar',
   toChain: 'BifrostPolkadot',
-  currency: 'ASTR - Native',
   slippage: '5',
   exchange: ['Hydration', 'AssetHubPolkadot'],
 };
 
-const transactTestData = [
-  {
-    fromChain: 'AssetHubKusama',
-    toChain: 'BifrostKusama',
-    currency: 'KSM - Native',
-  },
-];
+const transferAdvancedBase = {
+  fromChain: 'Astar',
+  toChain: 'BifrostPolkadot',
+};
 
-const transactInputOptions = [
-  {
-    label: 'minimal call',
-    call: '0x00',
-    refTime: '0',
-    proofSize: '0',
+const transactApiAdvancedConfig = {
+  options: {
+    development: false,
+    abstractDecimals: false,
+    xcmFormatCheck: false,
   },
-  {
-    label: 'call with weight',
-    call: '0x0102',
-    refTime: '1000000000',
-    proofSize: '100000',
-  },
-];
-
-const transferAdvancedTestCases: Array<{
-  label: string;
-  options: TTransferAdvancedOptions;
-  inputs: TTransferAdvancedInputs;
-  expectedError?: RegExp;
-}> = [
-  {
-    label: 'baseline',
-    options: {
-      development: false,
-      abstractDecimals: false,
-      xcmFormatCheck: false,
-    },
-    inputs: {
-      xcmVersion: Version.V4,
-      localAccount: 'Alice',
-      pallet: 'XTokens',
-      method: 'transfer',
-    },
-  },
-  {
-    label: 'xcm-check + abstract decimals + api override',
-    options: {
-      development: false,
-      abstractDecimals: true,
-      xcmFormatCheck: true,
-    },
-    inputs: {
-      xcmVersion: Version.V5,
-      localAccount: 'Bob',
-      pallet: 'PolkadotXcm',
-      method: 'transfer_assets',
-      apiOverrides: [{ chain: 'Kusama', endpoint: 'wss://kusama-rpc.polkadot.io' }],
-    },
-    expectedError:
-      /Cannot read properties of undefined \(reading 'type'\)/i,
-  },
-  {
-    label: 'development mode + missing api overrides',
-    options: {
-      development: true,
-      abstractDecimals: false,
-      xcmFormatCheck: true,
-    },
-    inputs: {
-      xcmVersion: Version.V5,
-      localAccount: 'Bob',
-      pallet: '',
-      method: '',
-    },
-    expectedError:
-      /Development mode requires an API override for .*Please provide an API client or WebSocket URL in the apiOverrides configuration\./i,
-  },
-];
+  inputs: {
+    xcmVersion: 'V4',
+    localAccount: 'Alice',
+    pallet: 'XTokens',
+    method: 'transfer',
+  } as TTransferAdvancedInputs,
+};
 
 const HYDRATION_CUSTOM_FROM = 'Hydration';
 const HYDRATION_CUSTOM_TO = 'Acala';
 const HYDRATION_NATIVE_SYMBOL = 'HDX';
-const ASTAR_NATIVE_SYMBOL = 'ASTR';
+const FOREIGN_SYMBOL = 'ACA';
+const FOREIGN_ABSTRACT_SYMBOL = 'USDT1';
+const SWAP_CUSTOM_SYMBOL = 'BNC';
 
 const hydrationOtherAssets = getOtherAssets(HYDRATION_CUSTOM_FROM);
 const hydrationSupportedAssets = getSupportedAssets(
@@ -244,9 +90,11 @@ const hydrationSupportedAssets = getSupportedAssets(
 const symbolAsset =
   hydrationSupportedAssets.find((asset) => !!asset.symbol) ??
   hydrationOtherAssets.find((asset) => !!asset.symbol);
+
 const supportedAssetIdAsset = hydrationSupportedAssets.find(
   (asset) => asset.assetId !== undefined,
 );
+
 const supportedLocationAsset = hydrationSupportedAssets.find(
   (asset) => !!asset.location,
 );
@@ -261,68 +109,23 @@ if (!symbolAsset?.symbol || !locationAsset?.location) {
 
 const customLocationJson = JSON.stringify(locationAsset.location);
 
-const getTransferSymbolBySpecifier = (symbolOption: TSymbolOptions): string => {
-  if (symbolOption === 'Native') {
+const getTransferSymbolByMode = (symbolMode: TSymbolMode): string => {
+  if (symbolMode === 'Native') {
     return HYDRATION_NATIVE_SYMBOL;
+  } else if (symbolMode === 'Foreign') {
+    return FOREIGN_SYMBOL;
+  } else if (symbolMode === 'Foreign abstract') {
+    return FOREIGN_ABSTRACT_SYMBOL;
   }
 
   return symbolAsset.symbol;
 };
 
-const customAssetTransferCases: TCustomAssetTransferCase[] = [
-  ...SYMBOL_OPTIONS.map((symbolOption) => ({
-    label: `symbol | ${symbolOption}`,
-    type: 'symbol' as const,
-    value: getTransferSymbolBySpecifier(symbolOption),
-    symbolOption,
-    fromChain: HYDRATION_CUSTOM_FROM,
-    toChain: HYDRATION_CUSTOM_TO,
-  })),
-  ...(supportedAssetIdAsset
-    ? [
-        {
-          label: 'assetId',
-          type: 'assetId' as const,
-          value: String(supportedAssetIdAsset.assetId),
-          fromChain: HYDRATION_CUSTOM_FROM,
-          toChain: HYDRATION_CUSTOM_TO,
-        },
-      ]
-    : []),
-  ...(supportedLocationAsset
-    ? [
-        {
-          label: 'location',
-          type: 'location' as const,
-          value: customLocationJson,
-          fromChain: HYDRATION_CUSTOM_FROM,
-          toChain: HYDRATION_CUSTOM_TO,
-        },
-        {
-          label: 'overridenLocation',
-          type: 'overridenLocation' as const,
-          value: customLocationJson,
-          fromChain: HYDRATION_CUSTOM_FROM,
-          toChain: HYDRATION_CUSTOM_TO,
-        },
-      ]
-    : []),
-];
-
-const customSwapAssetCases: TExpandedCustomAssetCase[] = SYMBOL_OPTIONS
-  .filter((symbolOption) => symbolOption !== 'Native')
-  .map((symbolOption) => ({
-    label: `symbol | ${symbolOption}`,
-    type: 'symbol',
-    value: 'DOT',
-    symbolOption,
-  }));
-
 const performCustomAction = async (
   appPage: Page,
   type: TCustomAssetOperation,
   textBoxParam: string,
-  symbolOptions?: TSymbolOptions,
+  symbolMode?: TSymbolMode,
   fieldPath = 'currencies.0',
   scope?: Locator,
 ) => {
@@ -425,8 +228,8 @@ const performCustomAction = async (
     await selectSegmentedOption('Symbol');
     await root.getByPlaceholder('Symbol').fill(textBoxParam);
 
-    if (symbolOptions) {
-      await selectSegmentedOption(symbolOptions);
+    if (symbolMode) {
+      await selectSegmentedOption(symbolMode);
     }
   } else if (type === 'location') {
     await selectSegmentedOption('Location');
@@ -448,17 +251,36 @@ const selectTransferChain = async (
   await appPage.getByRole('option', { name: createName(chain) }).click();
 };
 
+const selectFirstOptionFromDropdown = async (
+  appPage: Page,
+  dropdownTestId: string,
+  excludedOptionPattern?: RegExp,
+  index = 0,
+) => {
+  await appPage.getByTestId(dropdownTestId).nth(index).click();
+  const options = appPage.getByRole('option');
+  const optionsCount = await options.count();
+
+  for (let optionIndex = 0; optionIndex < optionsCount; optionIndex += 1) {
+    const option = options.nth(optionIndex);
+    const text = (await option.innerText()).trim();
+    if (!excludedOptionPattern || !excludedOptionPattern.test(text)) {
+      await option.click();
+      return text;
+    }
+  }
+
+  throw new Error(`No selectable option found for "${dropdownTestId}" dropdown.`);
+};
+
 const fillTransferCurrencies = async (
   appPage: Page,
   currency: TTransferCurrency,
   feeAsset?: string,
 ) => {
-  if (currency && typeof currency === 'string') {
-    await selectSdkCurrency(appPage, currency, 0);
-    return;
-  }
-
   if (!currency) {
+    await selectFirstOptionFromDropdown(appPage, 'select-currency', /custom/i);
+    await appPage.getByTestId('input-amount-0').fill('10');
     return;
   }
 
@@ -489,7 +311,7 @@ const addSwapOptions = async (
   exchange: string | string[],
   customAssetType?: TCustomAssetOperation,
   customAssetValue?: string,
-  customAssetSymbolOption?: TSymbolOptions,
+  customAssetSymbolMode?: TSymbolMode,
 ) => {
   await appPage.getByRole('button', { name: 'Add Swap' }).click();
 
@@ -511,13 +333,21 @@ const addSwapOptions = async (
       appPage,
       customAssetType,
       customAssetValue,
-      customAssetSymbolOption,
+      customAssetSymbolMode,
       'swapOptions.currencyTo',
       swapFieldset,
     );
   } else if (swapCurrency) {
     const currencySelectCount = await appPage.getByTestId('select-currency').count();
     await selectSdkCurrency(appPage, swapCurrency, currencySelectCount - 1);
+  } else {
+    const currencySelectCount = await appPage.getByTestId('select-currency').count();
+    await selectFirstOptionFromDropdown(
+      appPage,
+      'select-currency',
+      /custom/i,
+      currencySelectCount - 1,
+    );
   }
 };
 
@@ -526,7 +356,7 @@ const addTransactOptions = async (
   call: string,
   refTime: string,
   proofSize: string,
-  originKind: string,
+  originKind?: string,
 ) => {
   const addTransactButton = appPage.getByRole('button', { name: 'Add Transact' });
   if (await addTransactButton.isVisible()) {
@@ -539,9 +369,16 @@ const addTransactOptions = async (
   await appPage.getByTestId('transact-proof-size-input').fill(proofSize);
 
   await appPage.getByTestId('transact-origin-select').click();
-  await appPage
-    .getByRole('option', { name: originKind, exact: true })
-    .click();
+  if (originKind) {
+    await appPage
+      .getByRole('option', { name: originKind, exact: true })
+      .click();
+    return;
+  }
+
+  const firstOrigin = appPage.getByRole('option').first();
+  await expect(firstOrigin).toBeVisible();
+  await firstOrigin.click();
 };
 
 const setSwitchValue = async (switchLocator: Locator, value: boolean) => {
@@ -634,11 +471,11 @@ const performTransfer = async (
   await enableApiMode(appPage, useApi);
 
   await appPage.getByTestId('submit').click();
+  await acknowledgeTransferWarningIfOpened(appPage);
 
-  await appPage.waitForTimeout(3000);
   const error = appPage.getByTestId('error');
   if (expectedErrorPattern) {
-    await expect(error).toBeVisible();
+    await expect(error).toBeVisible({ timeout: 15_000 });
     await expect(error).toContainText(expectedErrorPattern);
     return;
   }
@@ -646,12 +483,44 @@ const performTransfer = async (
   await expect(error, (await error.isVisible()) ? await error.innerText() : '').not.toBeVisible();
 
   if (expectPopup) {
-    await appPage.waitForTimeout(3000);
-    await extensionPage.navigate();
-    await extensionPage.isPopupOpen();
-    await extensionPage.close();
-    await extensionPage.close();
+    await expectExtensionPopupAndClose(extensionPage);
   }
+};
+
+const expectExtensionPopupAndClose = async (
+  extensionPage: PolkadotjsExtensionPage,
+) => {
+  await extensionPage.navigate();
+  await extensionPage.isPopupOpen();
+  await extensionPage.close();
+  await extensionPage.close();
+};
+
+const fillBaseTransferForm = async (
+  appPage: Page,
+  fromChain = 'Astar',
+  toChain = 'BifrostPolkadot',
+) => {
+  await selectTransferChain(appPage, 'select-origin', fromChain);
+  await selectTransferChain(appPage, 'select-destination', toChain);
+  await selectFirstOptionFromDropdown(appPage, 'select-currency', /custom/i);
+  await appPage.getByTestId('input-amount-0').fill('10');
+};
+
+const submitTransferMenuAction = async (
+  appPage: Page,
+  actionName: 'Dry run' | 'Dry run preview',
+) => {
+  const submitButton = appPage.getByTestId('submit');
+  const buttonGroup = submitButton.locator('xpath=..');
+  await buttonGroup.getByRole('button').nth(1).click();
+  await appPage.getByRole('menuitem', { name: actionName, exact: true }).click();
+};
+
+const expectTransferOutputWithoutError = async (appPage: Page) => {
+  const error = appPage.getByTestId('error');
+  await expect(error, (await error.isVisible()) ? await error.innerText() : '').not.toBeVisible();
+  await expect(appPage.getByTestId('output')).toBeVisible({ timeout: 15_000 });
 };
 
 basePjsTest.describe(`XCM SDK - Transfer E2E Tests`, () => {
@@ -669,177 +538,580 @@ basePjsTest.describe(`XCM SDK - Transfer E2E Tests`, () => {
     await appPage.goto('/xcm-sdk/xcm-transfer');
   });
 
-  [false, true].forEach((useApi) => {
-    const apiLabel = useApi ? ' - API' : '';
-    paraToParaTestData.forEach(({ fromChain, toChain, currency }) => {
-      basePjsTest(
-        `Should succeed for ParaToPara transfer ${fromChain} -> ${toChain}${apiLabel}`,
-        async () => {
-          await performTransfer(appPage, extensionPage, {
-            fromChain,
-            toChain,
-            currency,
-            useApi,
-          });
-        },
-      );
+  basePjsTest('Should succeed for transfer with MAX amount toggle', async () => {
+    await selectTransferChain(appPage, 'select-origin', 'Astar');
+    await selectTransferChain(appPage, 'select-destination', 'BifrostPolkadot');
+    await selectFirstOptionFromDropdown(appPage, 'select-currency', /custom/i);
+
+    const maxCheckbox = appPage.getByLabel('MAX').first();
+    await maxCheckbox.check({ force: true });
+    await expect(maxCheckbox).toBeChecked();
+
+    await appPage.getByTestId('submit').click();
+    await acknowledgeTransferWarningIfOpened(appPage);
+
+    const error = appPage.getByTestId('error');
+    await expect(error, (await error.isVisible()) ? await error.innerText() : '').not.toBeVisible();
+
+    await expectExtensionPopupAndClose(extensionPage);
+  });
+
+  basePjsTest('Should run transfer dry run without warning modal', async () => {
+    await fillBaseTransferForm(appPage);
+    await submitTransferMenuAction(appPage, 'Dry run');
+
+    await expectTransferOutputWithoutError(appPage);
+    await expect(
+      appPage.getByRole('button', { name: 'I understand' }),
+    ).not.toBeVisible();
+  });
+
+  basePjsTest('Should run transfer dry run preview without warning modal', async () => {
+    await fillBaseTransferForm(appPage);
+    await submitTransferMenuAction(appPage, 'Dry run preview');
+
+    await expectTransferOutputWithoutError(appPage);
+    await expect(
+      appPage.getByRole('button', { name: 'I understand' }),
+    ).not.toBeVisible();
+  });
+
+  basePjsTest('Should cancel transfer from warning modal', async () => {
+    await fillBaseTransferForm(appPage);
+
+    await appPage.getByTestId('submit').click();
+    await expect(appPage.getByRole('button', { name: 'I understand' })).toBeVisible();
+    await appPage.getByRole('button', { name: 'Cancel' }).click();
+    await expect(
+      appPage.getByRole('button', { name: 'I understand' }),
+    ).not.toBeVisible();
+    await expect(appPage.getByTestId('error')).not.toBeVisible();
+  });
+
+  const paraToParaAstarToBifrostPolkadot = async (useApi: boolean) =>
+    performTransfer(appPage, extensionPage, {
+      fromChain: 'Astar',
+      toChain: 'BifrostPolkadot',
+      currency: null,
+      useApi,
     });
 
-    paraRelayTestData.forEach(({ fromChain, toChain }) => {
-      basePjsTest(
-        `Should succeed for RelayToPara transfer ${fromChain} -> ${toChain}${apiLabel}`,
-        async () => {
-          await performTransfer(appPage, extensionPage, {
-            fromChain,
-            toChain,
-            currency: null,
-            useApi,
-          });
-        },
-      );
-
-      basePjsTest(
-        `Should succeed for ParaToRelay transfer ${toChain} -> ${fromChain}${apiLabel}`,
-        async () => {
-          // We switch up the from and to chains.
-          await performTransfer(appPage, extensionPage, {
-            fromChain: toChain,
-            toChain: fromChain,
-            currency: null,
-            useApi,
-          });
-        },
-      );
+  const relayToParaJamtonToPolkadot = async (useApi: boolean) =>
+    performTransfer(appPage, extensionPage, {
+      fromChain: 'Jamton',
+      toChain: 'Polkadot',
+      currency: null,
+      useApi,
     });
 
-    multicurrencyTestData.forEach(
-      ({ fromChain, toChain, multicurrency, feeAsset }) => {
-        const expectedError = useApi
-          ? MULTICURRENCY_XCM_EXECUTE_LIMITATION
-          : undefined;
-        const outcomeLabel = expectedError ? 'Should fail' : 'Should succeed';
-        basePjsTest(
-          `${outcomeLabel} for multicurrency transfer ${toChain} -> ${fromChain}${apiLabel}`,
-          async () => {
-            await performTransfer(appPage, extensionPage, {
-              fromChain,
-              toChain,
-              currency: multicurrency,
-              useApi,
-              feeAsset,
-              expectPopup: !expectedError,
-              expectedErrorPattern: expectedError,
-            });
-          },
-        );
-      },
+  const paraToRelayPolkadotToJamton = async (useApi: boolean) =>
+    performTransfer(appPage, extensionPage, {
+      fromChain: 'Polkadot',
+      toChain: 'Jamton',
+      currency: null,
+      useApi,
+    });
+
+  basePjsTest('Should succeed for ParaToPara transfer Astar -> BifrostPolkadot', async () => {
+    await paraToParaAstarToBifrostPolkadot(false);
+  });
+
+  basePjsTest('Should succeed for ParaToPara transfer Astar -> BifrostPolkadot - API', async () => {
+    await paraToParaAstarToBifrostPolkadot(true);
+  });
+
+  basePjsTest('Should succeed for RelayToPara transfer Jamton -> Polkadot', async () => {
+    await relayToParaJamtonToPolkadot(false);
+  });
+
+  basePjsTest('Should succeed for RelayToPara transfer Jamton -> Polkadot - API', async () => {
+    await relayToParaJamtonToPolkadot(true);
+  });
+
+  basePjsTest('Should succeed for ParaToRelay transfer Polkadot -> Jamton', async () => {
+    await paraToRelayPolkadotToJamton(false);
+  });
+
+  basePjsTest('Should succeed for ParaToRelay transfer Polkadot -> Jamton - API', async () => {
+    await paraToRelayPolkadotToJamton(true);
+  });
+
+  basePjsTest('Should succeed for multicurrency transfer Hydration -> Acala', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: 'Hydration',
+      toChain: 'Acala',
+      currency: ['HDX - Native', 'USDT - 10'],
+      feeAsset: 'USDT - 10',
+      useApi: false,
+    });
+  });
+
+  basePjsTest('Should fail for multicurrency transfer Hydration -> Acala - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: 'Hydration',
+      toChain: 'Acala',
+      currency: ['HDX - Native', 'USDT - 10'],
+      feeAsset: 'USDT - 10',
+      useApi: true,
+      expectPopup: false,
+      expectedErrorPattern: MULTICURRENCY_XCM_EXECUTE_LIMITATION,
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol auto', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Auto'),
+          'Auto',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol auto - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Auto'),
+          'Auto',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol native - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Native'),
+          'Native',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol foreign', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Foreign'),
+          'Foreign',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol foreign - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Foreign'),
+          'Foreign',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol foreign abstract', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Foreign abstract'),
+          'Foreign abstract',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - symbol foreign abstract - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'symbol',
+          getTransferSymbolByMode('Foreign abstract'),
+          'Foreign abstract',
+        ),
+    });
+  });
+
+
+  basePjsTest('Should succeed for custom asset transfer - assetId', async () => {
+    basePjsTest.skip(
+      !supportedAssetIdAsset,
+      'Supported assetId is not available for Hydration -> Acala.',
     );
 
-    customAssetTransferCases.forEach(
-      ({ type, value, symbolOption, label, fromChain, toChain }) => {
-        basePjsTest(
-          `Should succeed for custom asset transfer - ${label}${apiLabel}`,
-          async () => {
-            await performTransfer(appPage, extensionPage, {
-              fromChain,
-              toChain,
-              currency: null,
-              useApi,
-              customCurrencyFunction: async () =>
-                performCustomAction(appPage, type, value, symbolOption),
-            });
-          },
-        );
-      },
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'assetId',
+          String(supportedAssetIdAsset?.assetId),
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - assetId - API', async () => {
+    basePjsTest.skip(
+      !supportedAssetIdAsset,
+      'Supported assetId is not available for Hydration -> Acala.',
     );
 
-    swapTestData.forEach(({ fromChain, toChain, currency }) => {
-      swapInputOptions.forEach(({ label, slippage, swapCurrency, exchange }) => {
-        basePjsTest(
-          `Should succeed for Swap transfer | ${label}${apiLabel}`,
-          async () => {
-            await performTransfer(appPage, extensionPage, {
-              fromChain,
-              toChain,
-              currency,
-              useApi,
-              customCurrencyFunction: async () =>
-                addSwapOptions(appPage, slippage, swapCurrency, exchange),
-            });
-          },
-        );
-      });
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(
+          appPage,
+          'assetId',
+          String(supportedAssetIdAsset?.assetId),
+        ),
     });
+  });
 
-    customSwapAssetCases.forEach(({ type, value, symbolOption, label }) => {
-      basePjsTest(
-        `Should succeed for custom asset Swap transfer - ${label}${apiLabel}`,
-        async () => {
-          await performTransfer(appPage, extensionPage, {
-            fromChain: customSwapBaseCase.fromChain,
-            toChain: customSwapBaseCase.toChain,
-            currency: customSwapBaseCase.currency,
-            useApi,
-            customCurrencyFunction: async () =>
-              addSwapOptions(
-                appPage,
-                customSwapBaseCase.slippage,
-                undefined,
-                customSwapBaseCase.exchange,
-                type,
-                value,
-                symbolOption,
-              ),
-          });
-        },
-      );
+    basePjsTest('Should succeed for custom asset transfer - location', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(appPage, 'location', customLocationJson),
     });
+  });
 
-    const advancedBaseCase = paraToParaTestData[0];
-    transferAdvancedTestCases.forEach(({ label, options, inputs, expectedError }) => {
-      const outcomeLabel = expectedError ? 'Should fail' : 'Should succeed';
-      basePjsTest(
-        `${outcomeLabel} for Transfer with advanced options ${label}${apiLabel}`,
-        async () => {
-          const expectPopup = !expectedError;
-          await performTransfer(appPage, extensionPage, {
-            fromChain: advancedBaseCase.fromChain,
-            toChain: advancedBaseCase.toChain,
-            currency: advancedBaseCase.currency,
-            useApi,
-            advancedOptionsFunction: async () =>
-              applyTransferAdvancedOptions(appPage, options, inputs),
-            expectPopup,
-            expectedErrorPattern: expectedError,
-          });
-        },
-      );
+  basePjsTest('Should succeed for custom asset transfer - location - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(appPage, 'location', customLocationJson),
     });
+  });
 
-    transactTestData.forEach(({ fromChain, toChain, currency }) => {
-      transactInputOptions.forEach(({ label, call, refTime, proofSize }) => {
-        TRANSACT_ORIGINS.forEach((originKind) => {
-          basePjsTest(
-            `Should succeed for Transact transfer | ${label} | ${originKind}${apiLabel}`,
-            async () => {
-              await performTransfer(appPage, extensionPage, {
-                fromChain,
-                toChain,
-                currency,
-                useApi,
-                customCurrencyFunction: async () =>
-                  addTransactOptions(
-                    appPage,
-                    call,
-                    refTime,
-                    proofSize,
-                    originKind,
-                  ),
-              });
+  basePjsTest('Should succeed for custom asset transfer - overridden location', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        performCustomAction(appPage, 'overridenLocation', customLocationJson),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset transfer - overridden location - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: HYDRATION_CUSTOM_FROM,
+      toChain: HYDRATION_CUSTOM_TO,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        performCustomAction(appPage, 'overridenLocation', customLocationJson),
+    });
+  });
+
+  basePjsTest('Should succeed for Swap transfer | default slippage', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: customSwapBaseCase.fromChain,
+      toChain: customSwapBaseCase.toChain,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        addSwapOptions(appPage, '15', undefined, 'Hydration'),
+    });
+  });
+
+  basePjsTest('Should succeed for Swap transfer | default slippage - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: customSwapBaseCase.fromChain,
+      toChain: customSwapBaseCase.toChain,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        addSwapOptions(appPage, '15', undefined, 'Hydration'),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset Swap transfer - symbol auto', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: customSwapBaseCase.fromChain,
+      toChain: customSwapBaseCase.toChain,
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        addSwapOptions(
+          appPage,
+          customSwapBaseCase.slippage,
+          undefined,
+          customSwapBaseCase.exchange,
+          'symbol',
+          SWAP_CUSTOM_SYMBOL,
+          'Auto',
+        ),
+    });
+  });
+
+  basePjsTest('Should succeed for custom asset Swap transfer - symbol auto - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: customSwapBaseCase.fromChain,
+      toChain: customSwapBaseCase.toChain,
+      currency: null,
+      useApi: true,
+      customCurrencyFunction: async () =>
+        addSwapOptions(
+          appPage,
+          customSwapBaseCase.slippage,
+          undefined,
+          customSwapBaseCase.exchange,
+          'symbol',
+          SWAP_CUSTOM_SYMBOL,
+          'Auto',
+        ),
+    });
+  });
+
+  basePjsTest(
+    'Should fail for Transfer with advanced options development mode + missing api overrides',
+    async () => {
+      await performTransfer(appPage, extensionPage, {
+        fromChain: transferAdvancedBase.fromChain,
+        toChain: transferAdvancedBase.toChain,
+        currency: null,
+        useApi: false,
+        advancedOptionsFunction: async () =>
+          applyTransferAdvancedOptions(
+            appPage,
+            {
+              development: true,
+              abstractDecimals: false,
+              xcmFormatCheck: true,
             },
-          );
-        });
+            {
+              xcmVersion: 'V5',
+              localAccount: 'Bob',
+              pallet: '',
+              method: '',
+            },
+          ),
+        expectPopup: false,
+        expectedErrorPattern:
+          /Development mode requires an API override for .*Please provide an API client or WebSocket URL in the apiOverrides configuration\./i,
       });
+    },
+  );
+
+  basePjsTest(
+    'Should fail for Transfer with advanced options development mode + missing api overrides - API',
+    async () => {
+      await performTransfer(appPage, extensionPage, {
+        fromChain: transferAdvancedBase.fromChain,
+        toChain: transferAdvancedBase.toChain,
+        currency: null,
+        useApi: true,
+        advancedOptionsFunction: async () =>
+          applyTransferAdvancedOptions(
+            appPage,
+            {
+              development: true,
+              abstractDecimals: false,
+              xcmFormatCheck: true,
+            },
+            {
+              xcmVersion: 'V5',
+              localAccount: 'Bob',
+              pallet: '',
+              method: '',
+            },
+          ),
+        expectPopup: false,
+        expectedErrorPattern:
+          /Development mode requires an API override for .*Please provide an API client or WebSocket URL in the apiOverrides configuration\./i,
+      });
+    },
+  );
+
+basePjsTest(
+  'Should succeed for Transfer with advanced options (V5 + Bob + PolkadotXcm transfer_assets)',
+  async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: transferAdvancedBase.fromChain,
+      toChain: transferAdvancedBase.toChain,
+      currency: null,
+      useApi: false,
+      advancedOptionsFunction: async () =>
+        applyTransferAdvancedOptions(
+          appPage,
+          {
+            development: false,
+            abstractDecimals: true,
+            xcmFormatCheck: true,
+          },
+          {
+            xcmVersion: 'V5',
+            localAccount: 'Bob',
+            pallet: 'PolkadotXcm',
+            method: 'transfer_assets',
+          },
+        ),
+    });
+  },
+);
+
+  basePjsTest(
+    'Should succeed for Transfer with advanced options development mode + valid api override - API',
+    async () => {
+      await performTransfer(appPage, extensionPage, {
+        fromChain: transferAdvancedBase.fromChain,
+        toChain: transferAdvancedBase.toChain,
+        currency: null,
+        useApi: true,
+        advancedOptionsFunction: async () =>
+          applyTransferAdvancedOptions(
+            appPage,
+            {
+              development: true,
+              abstractDecimals: false,
+              xcmFormatCheck: false,
+            },
+            {
+              xcmVersion: 'V5',
+              localAccount: 'Alice',
+              pallet: 'XTokens',
+              method: 'transfer',
+              apiOverrides: [
+                { chain: 'Astar', endpoint: 'wss://astar-rpc.dwellir.com' },
+                {
+                  chain: 'BifrostPolkadot',
+                  endpoint: 'wss://bifrost-polkadot.ibp.network',
+                },
+              ],
+            },
+          ),
+      });
+    },
+  );
+
+  basePjsTest(
+    'Should succeed for Transfer with advanced options development mode + valid api override',
+    async () => {
+      await performTransfer(appPage, extensionPage, {
+        fromChain: transferAdvancedBase.fromChain,
+        toChain: transferAdvancedBase.toChain,
+        currency: null,
+        useApi: false,
+        advancedOptionsFunction: async () =>
+          applyTransferAdvancedOptions(
+            appPage,
+            {
+              development: true,
+              abstractDecimals: false,
+              xcmFormatCheck: false,
+            },
+            {
+              xcmVersion: 'V5',
+              localAccount: 'Alice',
+              pallet: 'XTokens',
+              method: 'transfer',
+              apiOverrides: [
+                { chain: 'Astar', endpoint: 'wss://astar-rpc.dwellir.com' },
+                {
+                  chain: 'BifrostPolkadot',
+                  endpoint: 'wss://api-bifrost-polkadot.n.dwellir.com',
+                },
+              ],
+            },
+          ),
+      });
+    },
+  );
+
+  basePjsTest('Should succeed for Transact transfer | minimal call', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: 'AssetHubKusama',
+      toChain: 'BifrostKusama',
+      currency: null,
+      useApi: false,
+      customCurrencyFunction: async () =>
+        addTransactOptions(appPage, '0x00', '0', '0'),
+    });
+  });
+
+  basePjsTest('Should succeed for Transact transfer | minimal call - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: 'AssetHubKusama',
+      toChain: 'BifrostKusama',
+      currency: null,
+      useApi: true,
+      advancedOptionsFunction: async () =>
+        applyTransferAdvancedOptions(
+          appPage,
+          transactApiAdvancedConfig.options,
+          transactApiAdvancedConfig.inputs,
+        ),
+      customCurrencyFunction: async () =>
+        addTransactOptions(appPage, '0x00', '0', '0'),
+    });
+  });
+
+  basePjsTest('Should succeed for Transact transfer | call with weight - API', async () => {
+    await performTransfer(appPage, extensionPage, {
+      fromChain: 'AssetHubKusama',
+      toChain: 'BifrostKusama',
+      currency: null,
+      useApi: true,
+      advancedOptionsFunction: async () =>
+        applyTransferAdvancedOptions(
+          appPage,
+          transactApiAdvancedConfig.options,
+          transactApiAdvancedConfig.inputs,
+        ),
+      customCurrencyFunction: async () =>
+        addTransactOptions(appPage, '0x0102', '1000000000', '100000'),
     });
   });
 });

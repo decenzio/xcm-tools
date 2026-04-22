@@ -28,12 +28,12 @@ import {
   getSupportedPallets,
   getTChain,
   hasDryRunSupport,
-  hasSupportForAsset,
   replaceBigInt,
   SUBSTRATE_CHAINS,
   CHAINS,
   TSwapOptions,
 } from '@paraspell/sdk';
+import { toHex } from 'polkadot-api/utils';
 import { describe, beforeAll, it, expect } from 'vitest';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { XTransferDto } from '../src/x-transfer/dto/XTransferDto';
@@ -320,24 +320,6 @@ describe('XCM API (e2e)', () => {
         .expect(404);
     });
 
-    const hasSupportUnknownChainUrl = `/assets/${unknownChain}/has-support`;
-    it(`Has support for asset - ${hasSupportUnknownChainUrl} (GET)`, () => {
-      return request(app.getHttpServer())
-        .get(hasSupportUnknownChainUrl)
-        .query({ symbol: mockSymbol })
-        .expect(400);
-    });
-
-    const hasSupportUrl = `/assets/${mockChain}/has-support`;
-    it(`Has support for asset - ${hasSupportUrl} (GET)`, () => {
-      const hasSupport = hasSupportForAsset(mockChain, mockSymbol);
-      return request(app.getHttpServer())
-        .get(hasSupportUrl)
-        .query({ symbol: mockSymbol })
-        .expect(200)
-        .expect(JSON.stringify(hasSupport));
-    });
-
     const feeAssetsUrl = `/assets/${mockChain}/fee-assets`;
     it(`Get fee assets - ${feeAssetsUrl} (GET)`, () => {
       const feeAssets = getFeeAssets(mockChain);
@@ -510,7 +492,7 @@ describe('XCM API (e2e)', () => {
           currency,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to parachain Foreign() selector - ${xTransferUrl}`, async () => {
@@ -534,7 +516,7 @@ describe('XCM API (e2e)', () => {
           currency,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to parachain invalid scenario - ${xTransferUrl}`, async () => {
@@ -600,7 +582,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate Batch XCM call - Invalid Currency Symbol - ${xTransferBatchUrl}`, async () => {
@@ -828,7 +810,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate Batch XCM call - Single Transfer in Batch - ${xTransferBatchUrl}`, async () => {
@@ -863,7 +845,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate Batch XCM call - Specifying XCM Version - ${xTransferBatchUrl}`, async () => {
@@ -901,7 +883,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate Batch XCM call - Parachain to Relay Chain - ${xTransferBatchUrl}`, async () => {
@@ -939,7 +921,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate Batch XCM call - Relay Chain to Parachain - ${xTransferBatchUrl}`, async () => {
@@ -977,7 +959,7 @@ describe('XCM API (e2e)', () => {
           },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to parachain all valid - ${xTransferUrl}`, async () => {
@@ -1002,7 +984,7 @@ describe('XCM API (e2e)', () => {
           currency,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to parachain override currency - ${xTransferUrl}`, async () => {
@@ -1031,7 +1013,7 @@ describe('XCM API (e2e)', () => {
           currency: { location: Override(currency), amount },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to parachain custom xcm execute call - ${xTransferUrl}`, async () => {
@@ -1131,7 +1113,7 @@ describe('XCM API (e2e)', () => {
           feeAsset: { location: feeAsset },
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to relaychain all valid - ${xTransferUrl}`, async () => {
@@ -1157,7 +1139,7 @@ describe('XCM API (e2e)', () => {
           recipient,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Relaychain to parachain all valid - ${xTransferUrl}`, async () => {
@@ -1184,7 +1166,7 @@ describe('XCM API (e2e)', () => {
           recipient,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Parachain to relaychain all valid - ${xTransferUrl}`, async () => {
@@ -1212,7 +1194,7 @@ describe('XCM API (e2e)', () => {
           xcmVersion: Version.V3,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`Generate XCM call - Dry run unsupported chain - should throw error 400 - ${xTransferUrl}`, async () => {
@@ -1560,7 +1542,7 @@ describe('XCM API (e2e)', () => {
           options,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`X-transfer with valid transact options - ${xTransferUrl}`, async () => {
@@ -1595,7 +1577,6 @@ describe('XCM API (e2e)', () => {
           transactWeightForBuilder,
         )
         .build();
-
       return request(app.getHttpServer())
         .post(xTransferUrl)
         .send({
@@ -1607,7 +1588,7 @@ describe('XCM API (e2e)', () => {
           transactOptions,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
 
     it(`X-transfers with valid swap options array exchange - ${xTransfersUrl}`, async () => {
@@ -1733,7 +1714,7 @@ describe('XCM API (e2e)', () => {
           address,
         })
         .expect(201)
-        .expect((await tx.getEncodedData()).asHex());
+        .expect(toHex(await tx.getEncodedData()));
     });
   });
 
@@ -1779,6 +1760,20 @@ describe('XCM API (e2e)', () => {
     it('Generate transfer info call - all valid - /transfer-info', async () => {
       return request(app.getHttpServer())
         .post('/transfer-info')
+        .send(transferInfo)
+        .expect(201);
+    });
+
+    it('Generate min transferable amount call - all valid - /min-transferable-amount', async () => {
+      return request(app.getHttpServer())
+        .post('/min-transferable-amount')
+        .send(transferInfo)
+        .expect(201);
+    });
+
+    it('Generate receivable amount call - all valid - /receivable-amount', async () => {
+      return request(app.getHttpServer())
+        .post('/receivable-amount')
         .send(transferInfo)
         .expect(201);
     });

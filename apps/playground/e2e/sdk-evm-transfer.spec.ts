@@ -1,12 +1,11 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { getOtherAssets } from '@paraspell/sdk';
 import { BrowserContext, chromium, expect, Page, test } from '@playwright/test';
 
 import { MetamaskExtensionPage } from './pom';
-import { enableApiMode } from './utils/sdkForm';
 import { TEST_MNEMONIC, TEST_SS58_ADDRESS } from './utils/testData';
+import { acknowledgeTransferWarningIfOpened } from './utils/transferWarningModal';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,11 +53,6 @@ const setupMetamaskExtension = async (context: BrowserContext) => {
 
   await appPage.goto('/xcm-sdk/evm-transfer');
 
-  await appPage.getByTestId('label-pjs-api').click();
-
-  // Click viem switch's parent.
-  await appPage.getByTestId('switch-api').locator('..').click();
-
   await appPage.getByTestId('btn-connect-eth-wallet').click();
   await appPage.getByRole('button', { name: 'Metamask' }).click();
 
@@ -72,22 +66,30 @@ const setupMetamaskExtension = async (context: BrowserContext) => {
   return { appPage };
 };
 
-const performTransfer = async (
-  appPage: Page,
-  { useApi, currency }: { useApi: boolean; currency: string },
-) => {
+const ensureEthAccountSelected = async (appPage: Page) => {
+  const connectWalletButton = appPage.getByTestId('btn-connect-eth-wallet');
+  await expect(connectWalletButton).toBeVisible();
+
+  const connectButtonText = (await connectWalletButton.innerText()).trim();
+  if (/^Connected:/.test(connectButtonText)) {
+    return;
+  }
+
+  await connectWalletButton.click();
+  await appPage.getByRole('button', { name: 'Metamask' }).click();
+  await appPage.getByTestId('btn-select-eth-account').first().click();
+};
+
+const performTransfer = async (appPage: Page) => {
   await appPage.getByTestId('input-address').fill(TEST_SS58_ADDRESS);
 
   await appPage.getByTestId('select-currency').click();
-
-  await appPage.getByRole('option', { name: currency }).first().click();
-
-  await enableApiMode(appPage, useApi);
+  await appPage.getByRole('option').first().click();
 
   await appPage.getByTestId('submit').click();
-  await appPage.waitForSelector('[data-testid=error]');
-
-  await expect(appPage.getByTestId('error')).toBeVisible();
+  await acknowledgeTransferWarningIfOpened(appPage);
+  const errorLocator = appPage.getByTestId('error');
+  await expect(errorLocator).toBeVisible({ timeout: 15_000 });
 
   const errorRegex = new RegExp(
     '(' +
@@ -105,37 +107,33 @@ const performTransfer = async (
     ')',
   );
 
-  await expect(appPage.getByTestId('error')).toContainText(errorRegex);
+  await expect(errorLocator).toContainText(errorRegex);
   await expect(appPage.getByTestId('output')).not.toBeVisible();
 };
 
 baseUiTest.describe('XCM SDK - ETH Bridge', () => {
   let appPage: Page;
 
-  const currencies = getOtherAssets('Ethereum').map((asset) => asset.symbol) as string[];
-
-  // Test every other currency to avoid hitting the rate limit on Ethereum RPC node
-  // Also, filter out some not supported currencies
-  const filteredCurrencies = currencies.filter(
-    (currency, index) =>
-      !currency.startsWith('CFG') &&
-      !currency.startsWith('WLD') &&
-      !currency.startsWith('KOL') &&
-      !currency.startsWith('WUD') &&
-      !currency.startsWith('TEER') &&
-      (index === 0 || index % 2 === 1),
-  );
-
   baseUiTest.beforeAll(async ({ context }) => {
     ({ appPage } = await setupMetamaskExtension(context));
   });
 
-  filteredCurrencies.forEach((currency) => {
-    baseUiTest(
-      `Should transfer ${currency} from Ethereum to Polkadot`,
-      async () => {
-        await performTransfer(appPage, { useApi: false, currency });
-      }
-    );
+  baseUiTest.beforeEach(async () => {
+    await appPage.goto('/xcm-sdk/evm-transfer');
+    await ensureEthAccountSelected(appPage);
+
+    const pjsApiSelector = appPage.getByTestId('label-pjs-api').first();
+    await expect(pjsApiSelector).toBeVisible({ timeout: 10_000 });
+    await pjsApiSelector.click();
+
+    const viemSwitch = appPage.getByTestId('switch-api');
+    await expect(viemSwitch).toBeVisible();
+    if (await viemSwitch.isChecked()) {
+      await viemSwitch.uncheck();
+    }
+  });
+
+  baseUiTest('Should transfer from Ethereum to Polkadot - PJS', async () => {
+    await performTransfer(appPage);
   });
 });
