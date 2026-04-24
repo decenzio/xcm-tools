@@ -184,6 +184,34 @@ describe('XCM API (e2e)', () => {
         .query({ ecosystem: 'invalid' })
         .expect(400);
     });
+
+    it('Get convert ss58 - /convert-ss58 (GET)', () => {
+      return request(app.getHttpServer())
+        .get('/convert-ss58')
+        .query({
+          address: '5FNDaod3wYTvg48s73H1zSB3gVoKNg2okr6UsbyTuLutTXFz',
+          chain: 'Acala',
+        })
+        .expect(200)
+        .expect((res) => {
+          expect(typeof res.text).toBe('string');
+          expect(res.text.length).toBeGreaterThan(0);
+        });
+    });
+
+    it('Get convert ss58 - invalid chain - /convert-ss58 (GET)', () => {
+      return request(app.getHttpServer())
+        .get('/convert-ss58')
+        .query({
+          address: '5FNDaod3wYTvg48s73H1zSB3gVoKNg2okr6UsbyTuLutTXFz',
+          chain: unknownChain,
+        })
+        .expect(400);
+    });
+
+    it('Get convert ss58 - missing query params - /convert-ss58 (GET)', () => {
+      return request(app.getHttpServer()).get('/convert-ss58').expect(400);
+    });
   });
 
   describe('Assets controller', () => {
@@ -297,6 +325,108 @@ describe('XCM API (e2e)', () => {
         })
         .expect(201));
 
+    it('Get asset reserve chain - /assets/:chain/reserve-chain (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/reserve-chain')
+        .send({
+          currency: { symbol: 'BILL' },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Get asset info - /assets/:chain/asset-info (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/asset-info')
+        .send({
+          currency: { symbol: 'BILL' },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Get supported destinations - /assets/:chain/supported-destinations (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/supported-destinations')
+        .send({
+          currency: { symbol: 'BILL' },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(Array.isArray(res.body)).toBe(true);
+        });
+    });
+
+    it('Get asset reserve chain - missing currency body - /assets/:chain/reserve-chain (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/reserve-chain')
+        .send({})
+        .expect(400);
+    });
+
+    it('Get asset reserve chain - unknown chain - /assets/:chain/reserve-chain (POST)', () => {
+      return request(app.getHttpServer())
+        .post(`/assets/${unknownChain}/reserve-chain`)
+        .send({ currency: { symbol: 'BILL' } })
+        .expect(400);
+    });
+
+    it('Get asset reserve chain - unknown currency - /assets/:chain/reserve-chain (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/reserve-chain')
+        .send({ currency: { symbol: unknownSymbol } })
+        .expect(400);
+    });
+
+    it('Get asset info - missing currency body - /assets/:chain/asset-info (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/asset-info')
+        .send({})
+        .expect(400);
+    });
+
+    it('Get asset info - invalid destination enum - /assets/:chain/asset-info (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/asset-info')
+        .send({
+          currency: { symbol: 'BILL' },
+          destination: 'NotARealChain',
+        })
+        .expect(400);
+    });
+
+    it('Get asset info - unknown chain - /assets/:chain/asset-info (POST)', () => {
+      return request(app.getHttpServer())
+        .post(`/assets/${unknownChain}/asset-info`)
+        .send({ currency: { symbol: 'BILL' } })
+        .expect(400);
+    });
+
+    it('Get supported destinations - missing currency body - /assets/:chain/supported-destinations (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/supported-destinations')
+        .send({})
+        .expect(400);
+    });
+
+    it('Get supported destinations - unknown chain - /assets/:chain/supported-destinations (POST)', () => {
+      return request(app.getHttpServer())
+        .post(`/assets/${unknownChain}/supported-destinations`)
+        .send({ currency: { symbol: 'BILL' } })
+        .expect(400);
+    });
+
+    it('Get supported destinations - unknown currency - /assets/:chain/supported-destinations (POST)', () => {
+      return request(app.getHttpServer())
+        .post('/assets/AssetHubPolkadot/supported-destinations')
+        .send({ currency: { symbol: unknownSymbol } })
+        .expect(400);
+    });
+
     const relayChainSymbolUknownChainUrl = `/assets/${unknownChain}/relay-chain-symbol`;
     it(`Get relaychain symbol - ${relayChainSymbolUknownChainUrl} (GET)`, () => {
       return request(app.getHttpServer())
@@ -329,6 +459,45 @@ describe('XCM API (e2e)', () => {
         .expect(feeAssets);
     });
 
+    it(`Get fee assets - unknown chain - /assets/${unknownChain}/fee-assets (GET)`, () => {
+      return request(app.getHttpServer())
+        .get(`/assets/${unknownChain}/fee-assets`)
+        .expect(400);
+    });
+
+    it('Get asset support - /assets/:chain/has-support (GET)', () => {
+      return request(app.getHttpServer())
+        .get('/assets/AssetHubPolkadot/has-support')
+        .query({ symbol: 'DOT' })
+        .expect(200)
+        .expect((res) => {
+          expect(['true', 'false']).toContain(res.text);
+        });
+    });
+
+    it('Get asset support - missing symbol query - /assets/:chain/has-support (GET)', () => {
+      return request(app.getHttpServer())
+        .get('/assets/AssetHubPolkadot/has-support')
+        .expect(400);
+    });
+
+    it('Get asset support - unknown currency symbol - /assets/:chain/has-support (GET)', () => {
+      return request(app.getHttpServer())
+        .get('/assets/AssetHubPolkadot/has-support')
+        .query({ symbol: unknownSymbol })
+        .expect(200)
+        .expect((res) => {
+          expect(res.text).toBe('false');
+        });
+    });
+
+    it('Get asset support - unknown chain - /assets/:chain/has-support (GET)', () => {
+      return request(app.getHttpServer())
+        .get(`/assets/${unknownChain}/has-support`)
+        .query({ symbol: 'DOT' })
+        .expect(400);
+    });
+
     const parachainIdUnknownChainUrl = `/chains/${unknownChain}/para-id `;
     it(`Get parachain id - ${parachainIdUnknownChainUrl} (GET)`, () => {
       return request(app.getHttpServer())
@@ -350,15 +519,17 @@ describe('XCM API (e2e)', () => {
         });
     });
 
-    it('should return 400 for invalid native balance request', async () => {
-      const invalidRequest = {
-        address: '5EtHZF4E8QagNCz6naobCkCAUT52SbcEqaXiDUu2PjUHxZid',
-      };
-
+    it('should return 400 for balance request when chain path is invalid', async () => {
       return request(app.getHttpServer())
         .post('/balance/Chain123')
-        .send(invalidRequest)
+        .send({
+          address: '5EtHZF4E8QagNCz6naobCkCAUT52SbcEqaXiDUu2PjUHxZid',
+        })
         .expect(400);
+    });
+
+    it('should return 400 for balance request when address is missing on valid chain', async () => {
+      return request(app.getHttpServer()).post('/balance/Acala').send({}).expect(400);
     });
 
     it('should get foreign balance successfully', async () => {
@@ -378,17 +549,63 @@ describe('XCM API (e2e)', () => {
         });
     });
 
-    it('should return 400 for invalid foreign balance request', async () => {
-      const invalidRequest = {
-        address: '5EtHZF4E8QagNCz6naobCkCAUT52SbcEqaXiDUu2PjUHxZid',
+    it('should return 400 for balance request when currency is unknown on valid chain', async () => {
+      return request(app.getHttpServer())
+        .post('/balance/Acala')
+        .send({
+          address: '5EtHZF4E8QagNCz6naobCkCAUT52SbcEqaXiDUu2PjUHxZid',
+          currency: {
+            symbol: unknownSymbol,
+          },
+        })
+        .expect(400);
+    });
+
+    it('should get existential deposit successfully', async () => {
+      const validRequest = {
         currency: {
-          symbol: 'UNQ',
+          symbol: Native('DOT'),
         },
       };
 
       return request(app.getHttpServer())
-        .post('/balance/Chain123')
-        .send(invalidRequest)
+        .post('/balance/AssetHubPolkadot/existential-deposit')
+        .send(validRequest)
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('should return 400 for existential deposit - ambiguous plain DOT symbol - /balance/:chain/existential-deposit', () => {
+      return request(app.getHttpServer())
+        .post('/balance/AssetHubPolkadot/existential-deposit')
+        .send({
+          currency: { symbol: 'DOT' },
+        })
+        .expect(400)
+        .expect((res) => {
+          expect(String(res.body.message)).toContain(
+            'Multiple matches found for symbol DOT',
+          );
+        });
+    });
+
+    it('should return 400 for existential deposit - unknown chain - /balance/:chain/existential-deposit', () => {
+      return request(app.getHttpServer())
+        .post(`/balance/${unknownChain}/existential-deposit`)
+        .send({
+          currency: { symbol: Native('DOT') },
+        })
+        .expect(400);
+    });
+
+    it('should return 400 for existential deposit - unknown currency - /balance/:chain/existential-deposit', () => {
+      return request(app.getHttpServer())
+        .post('/balance/AssetHubPolkadot/existential-deposit')
+        .send({
+          currency: { symbol: unknownSymbol },
+        })
         .expect(400);
     });
 
@@ -399,6 +616,20 @@ describe('XCM API (e2e)', () => {
         .expect((res) => {
           expect(res.body).toBeDefined();
         });
+    });
+
+    it('should return 400 for supported assets - unknown origin in query - /supported-assets', () => {
+      return request(app.getHttpServer())
+        .get('/supported-assets')
+        .query({ origin: unknownChain, destination: 'Astar' })
+        .expect(400);
+    });
+
+    it('should return 400 for supported assets - unknown destination in query - /supported-assets', () => {
+      return request(app.getHttpServer())
+        .get('/supported-assets')
+        .query({ origin: 'Acala', destination: unknownChain })
+        .expect(400);
     });
   });
 
@@ -1213,6 +1444,25 @@ describe('XCM API (e2e)', () => {
         .expect(400);
     });
 
+    it('Dry run - valid supported route - /dry-run', async () => {
+      return request(app.getHttpServer())
+        .post('/dry-run')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
     it(`Generate XCM call - Parachain to relaychain invalid version - ${xTransferUrl}`, async () => {
       const from: TChain = 'AssetHubKusama';
       return request(app.getHttpServer())
@@ -1417,6 +1667,30 @@ describe('XCM API (e2e)', () => {
         .expect(500);
     });
 
+    it('Get best amount out - valid payload with swap options - /best-amount-out', () => {
+      return request(app.getHttpServer())
+        .post('/best-amount-out')
+        .send({
+          from: 'Astar',
+          to: 'BifrostPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: { type: 'Native', value: 'ASTR' },
+            amount: '1000000000000000000',
+          },
+          swapOptions: {
+            currencyTo: { symbol: 'DOT' },
+            exchange: 'Hydration',
+            slippage: 1,
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
     it('Dry run preview - invalid mintFeeAssets type - /dry-run-preview', () => {
       return request(app.getHttpServer())
         .post('/dry-run-preview')
@@ -1436,6 +1710,47 @@ describe('XCM API (e2e)', () => {
         .expect(400);
     });
 
+    it('Dry run preview - valid payload - /dry-run-preview', () => {
+      return request(app.getHttpServer())
+        .post('/dry-run-preview')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Dry run preview - valid payload with mintFeeAssets boolean - /dry-run-preview', () => {
+      return request(app.getHttpServer())
+        .post('/dry-run-preview')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+          options: {
+            mintFeeAssets: true,
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
     it('Get XCM fee - invalid disableFallback type - /xcm-fee', () => {
       return request(app.getHttpServer())
         .post('/xcm-fee')
@@ -1449,6 +1764,144 @@ describe('XCM API (e2e)', () => {
             amount: '10000000000',
           },
           disableFallback: 'true',
+        })
+        .expect(400);
+    });
+
+    it('Get XCM fee - valid payload with disableFallback false - /xcm-fee', () => {
+      return request(app.getHttpServer())
+        .post('/xcm-fee')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+          disableFallback: false,
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Get origin XCM fee - valid payload - /origin-xcm-fee', () => {
+      return request(app.getHttpServer())
+        .post('/origin-xcm-fee')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Get origin XCM fee - missing sender - /origin-xcm-fee', () => {
+      return request(app.getHttpServer())
+        .post('/origin-xcm-fee')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(400);
+    });
+
+    it('Get origin XCM fee - invalid origin chain - /origin-xcm-fee', () => {
+      return request(app.getHttpServer())
+        .post('/origin-xcm-fee')
+        .send({
+          from: unknownChain,
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(400);
+    });
+
+    it('Get transferable amount - valid payload - /transferable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/transferable-amount')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Get transferable amount - missing sender - /transferable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/transferable-amount')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(400);
+    });
+
+    it('Verify ED on destination - valid payload - /verify-ed-on-destination', () => {
+      return request(app.getHttpServer())
+        .post('/verify-ed-on-destination')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          sender,
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Verify ED on destination - missing sender - /verify-ed-on-destination', () => {
+      return request(app.getHttpServer())
+        .post('/verify-ed-on-destination')
+        .send({
+          from: 'Hydration',
+          to: 'AssetHubPolkadot',
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '10000000000',
+          },
         })
         .expect(400);
     });
@@ -1469,6 +1922,25 @@ describe('XCM API (e2e)', () => {
         .expect(400);
     });
 
+    it('Sign and submit - valid derivation path sender - /sign-and-submit', async () => {
+      return request(app.getHttpServer())
+        .post('/sign-and-submit')
+        .send({
+          from: 'Polkadot',
+          to: 'AssetHubPolkadot',
+          sender: '//Alice',
+          recipient,
+          currency: {
+            symbol: 'DOT',
+            amount: '100000000',
+          },
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
     it(`Gets Ethereum bridge status`, async () => {
       return request(app.getHttpServer())
         .get('/x-transfer/eth-bridge-status')
@@ -1476,6 +1948,22 @@ describe('XCM API (e2e)', () => {
         .expect((res) => {
           expect(res.body).toBeDefined();
         });
+    });
+
+    it('Gets para to eth fees - /x-transfer/para-eth-fees', async () => {
+      return request(app.getHttpServer())
+        .get('/x-transfer/para-eth-fees')
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toBeDefined();
+        });
+    });
+
+    it('Para eth fees - wrong HTTP method returns 404 - /x-transfer/para-eth-fees', () => {
+      return request(app.getHttpServer())
+        .post('/x-transfer/para-eth-fees')
+        .send({})
+        .expect(404);
     });
 
     it('Get swap pairs - invalid exchange - /swap/pairs (GET)', () => {
@@ -1764,11 +2252,71 @@ describe('XCM API (e2e)', () => {
         .expect(201);
     });
 
+    it('Generate min transferable amount call - invalid origin provided - /min-transferable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/min-transferable-amount')
+        .send({
+          ...transferInfo,
+          from: unknownChain,
+        })
+        .expect(400);
+    });
+
+    it('Generate min transferable amount call - invalid destination provided - /min-transferable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/min-transferable-amount')
+        .send({
+          ...transferInfo,
+          to: unknownChain,
+        })
+        .expect(400);
+    });
+
+    it('Generate min transferable amount call - invalid wallet address destination - /min-transferable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/min-transferable-amount')
+        .send({
+          ...transferInfo,
+          recipient: 'InvalidWalletAddress',
+        })
+        .expect(400);
+    });
+
     it('Generate min transferable amount call - all valid - /min-transferable-amount', async () => {
       return request(app.getHttpServer())
         .post('/min-transferable-amount')
         .send(transferInfo)
         .expect(201);
+    });
+
+    it('Generate receivable amount call - invalid origin provided - /receivable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/receivable-amount')
+        .send({
+          ...transferInfo,
+          from: unknownChain,
+        })
+        .expect(400);
+    });
+
+    it('Generate receivable amount call - invalid destination provided - /receivable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/receivable-amount')
+        .send({
+          ...transferInfo,
+          to: unknownChain,
+        })
+        .expect(400);
+    });
+
+    it('Generate receivable amount call - invalid wallet address destination - /receivable-amount', () => {
+      return request(app.getHttpServer())
+        .post('/receivable-amount')
+        .send({
+          ...transferInfo,
+          recipient: 'InvalidWalletAddress',
+        })
+        .expect(400);
     });
 
     it('Generate receivable amount call - all valid - /receivable-amount', async () => {
